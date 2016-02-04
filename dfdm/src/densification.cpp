@@ -10,19 +10,62 @@
       L.vankampenhout@uu.nl
    -------------------------------------------------------------------------------- */
 
+#include <cstdlib>
 #include <iostream>
 #include <ctime>
 
+#include "iniparser.h"
 #include "idealizedcoresite.h"
 
 using namespace Densification; 
 
+/* define data container that holds all user settings */
+typedef struct settings settings; 
+struct settings {
+    /* overburden parameters */
+    double eta0;
+    double c5;
+    double c6;
+};
+
+void readSettingsFromIniFile(char ininame[], settings s){
+    dictionary* d = iniparser_load(ininame);
+    s.eta0 = iniparser_getdouble(d, "overburden:eta0", -1.0);
+    if (s.eta0 < 0.0) {
+        std::cout << "ERROR: overburden:eta0 not defined in INI file or is negative" << std::endl;
+        std::abort();
+    } else {
+        std::cout << "INFO: using overburden:eta0 = " << s.eta0 << std::endl;
+    }
+    s.c5 = iniparser_getdouble(d, "overburden:c5", -1.0);
+    if (s.c5 < 0.0) {
+        std::cout << "ERROR: overburden:c5 not defined in INI file or is negative" << std::endl;
+        std::abort();
+    } else {
+        std::cout << "INFO: using overburden:c5 = " << s.c5 << std::endl;
+    }
+    s.c6 = iniparser_getdouble(d, "overburden:c6", -1.0);
+    if (s.c6 < 0.0) {
+        std::cout << "ERROR: overburden:c6 not defined in INI file or is negative" << std::endl;
+        std::abort();
+    } else {
+        std::cout << "INFO: using overburden:c6 = " << s.c6 << std::endl;
+    }
+    iniparser_freedict(d);
+}
+
 int main(){
-    /*  Idealized */
+    /*  parse config file */
+    char ininame[] = "settings.ini";
+    settings my_settings;
+    readSettingsFromIniFile(ininame, my_settings);
+
     IdealizedCoreSite core;
 
-    /* eta = Overburden.eta0 * math.exp(Overburden.c5*(Overburden.Tf-T) + Overburden.c6*dens) # viscocity, assuming no liquid */
-    core.c5 = 0.16;
+    /* configure run settings */
+    core.c5 = my_settings.c5;
+    core.eta0 = my_settings.eta0;
+    core.c6 = my_settings.c6;
 
     core.init(DensificationMethod::Ar10T, true);
 
