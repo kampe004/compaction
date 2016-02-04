@@ -5,10 +5,9 @@
 #include <vector>
 #include <algorithm>
 #include "constants.h"
+#include "settings.h"
 
 namespace Densification { 
-
-enum class DensificationMethod { Ar10T, Overburden};
 
 struct Layer {
     double T;
@@ -20,6 +19,7 @@ struct Layer {
 class IceCoreSite {
     /// abstract base class for all ice core classes
 private:
+    bool is_initialized = false;
     const double ref_height = 0.4; //  		# reference height of layer in meters
     const double dzmax = 2*ref_height; //  # maximum thickness of layer
     const double dzmin = 0.5*ref_height; // # minimum thickness of layer
@@ -28,35 +28,42 @@ private:
     // layers are ordered bottom [grid.front()] to top [grid.back()]
     std::vector<Layer> grid;
 
-    bool have_diffusion;
-    DensificationMethod densification_method;
+    // initialize constants in case the default constructor is used
+    bool have_diffusion = false;
+    DensificationMethod densification_method = DensificationMethod::Ar10T;
+    // constants for overburden compaction 
+    double eta0 = 9e5;
+    double c5 = 0.08;
+    double c6 = 0.023;
 
-    // member functions
     double getDepthOfDensity(double dens);
 
 protected:
     long current_time = 0; // time in seconds since start of simulation
 
-public:
-    IceCoreSite() {}; 
-    ~IceCoreSite() {}; 
-
-    // constants for overburden compaction (need them here to get/set)
-    double eta0 = 9e5;
-    double c5 = 0.08;
-    double c6 = 0.023;
-
-    // member functions
-    void init(DensificationMethod dm, bool diff);
-    void runTimeStep(long dt);
     void accumulate(long dt);
     void compact(long dt);
     void compactAr10T(long dt);
     void compactOverburden(long dt);
     void heatDiffusion(long dt);
-    void writeOutput(); 
     double getZ550();
     double getZ830();
+ 
+    // pure virtual functions (must be implemented by derived class)
+    virtual double surfaceDensity() =0;
+    virtual double surfaceTemperature() =0;
+    virtual double accumulationRate() =0;
+    virtual double annualAccumulation() =0;
+    virtual double annualSurfaceTemperature() =0;
+//    virtual double annualSurfaceDensity() =0;
+
+public:
+    IceCoreSite() {};
+    IceCoreSite(Settings& settings);
+    ~IceCoreSite() {}; 
+
+    void init();
+    void runTimeStep(long dt);
     void writeFiles();
 
     // member functions with implementation
@@ -86,14 +93,6 @@ public:
     // polymorphic functions (should be overridden by derived class)
     virtual std::string toString();
     virtual void printIceCoreSummary();
-
-    // pure virtual functions (must be implemented by derived class)
-    virtual double surfaceDensity() =0;
-    virtual double surfaceTemperature() =0;
-    virtual double accumulationRate() =0;
-    virtual double annualAccumulation() =0;
-    virtual double annualSurfaceTemperature() =0;
-//    virtual double annualSurfaceDensity() =0;
 };
 
 

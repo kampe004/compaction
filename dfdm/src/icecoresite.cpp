@@ -15,13 +15,19 @@
 #include <sstream>
 
 #include "icecoresite.h"
+#include "logging.h"
 
 namespace Densification{ 
 
-void IceCoreSite::init(DensificationMethod dm, bool diff) {
-    densification_method = dm;
-    have_diffusion = diff;
+IceCoreSite::IceCoreSite(Settings& settings) {
+    densification_method = settings.dm;
+    have_diffusion = settings.heat;
+    eta0 = settings.eta0;
+    c5 = settings.c5;
+    c6 = settings.c6;
+}
 
+void IceCoreSite::init(){
     // initialize grid with a very tiny top layer
     Layer layer;
     layer.T       = this->surfaceTemperature();
@@ -29,9 +35,14 @@ void IceCoreSite::init(DensificationMethod dm, bool diff) {
     layer.dz      = 0.001;
     layer.mass    = layer.dz * layer.dens; 
     grid.push_back(layer);
+    is_initialized = true;
 }
 
 void IceCoreSite::runTimeStep(long dt) {
+    if (!is_initialized){
+        logger << "ERROR: core is not initialized, run init() first!" << std::endl;
+        std::abort();
+    }
     accumulate(dt);
     compact(dt);
 
@@ -94,13 +105,10 @@ void IceCoreSite::accumulate(long dt) {
 void IceCoreSite::compact(long dt) {
     if (densification_method == DensificationMethod::Ar10T) {
         compactAr10T(dt);
-    //    printf("DEBUG Ar10T \n");
     } else if (densification_method == DensificationMethod::Overburden) {
         compactOverburden(dt);
-    //    printf("DEBUG Overburden \n");
     } else {
-        std::cout << "ERROR: unknown densification method" << std::endl;
-        std::cout << std::flush;
+        logger << "ERROR: unknown densification method" << std::endl;
         std::abort();
     }
 }
@@ -174,8 +182,7 @@ void IceCoreSite::heatDiffusion(long dt) {
     for (int i = 1; i < gridsize()-1; i++) {
         double stab_crit = td[i] * dt / pow(grid[i].dz,2);
         if (stab_crit > 0.5) {
-            std::cout << "ERROR: stability criterium violated, r = " << stab_crit << std::endl;
-            std::cout << std::flush;
+            logger << "ERROR: stability criterium violated, r = " << stab_crit << std::endl;
             std::abort();
         } else {
             T_new[i] = td[i]*dt/pow(grid[i].dz,2)*(grid[i-1].T-2*grid[i].T+grid[i+1].T) + grid[i].T; // # Forward in Time Centered in Space
@@ -185,7 +192,6 @@ void IceCoreSite::heatDiffusion(long dt) {
     // Update temperatures
     for (int i = 0; i < gridsize(); i++) {
         grid[i].T = T_new[i];
-//        printf("Layer %d T_new %g\n",i,T_new[i]);
     }
 }
 
@@ -210,24 +216,24 @@ double IceCoreSite::getZ830() {
 }
 
 void IceCoreSite::printIceCoreSummary() {
-    std::cout << "Core = "+this->toString() << std::endl;
+    logger << "Core = "+this->toString() << std::endl;
     double tot_mass = 0;
     double tot_depth = 0;
     for (int i = gridsize()-1; i >= 0; i--) {
         tot_mass = tot_mass + grid[i].mass;
         tot_depth = tot_depth + grid[i].dz;
-        printf("Layer %d : h=%f rho=%f T=%f \n",gridsize()-i-1,grid[i].dz,grid[i].dens,grid[i].T);
+        logger << "Layer " << gridsize()-i-1 << " : h=" << grid[i].dz << ", rho=" << grid[i].dens << ", T=" << grid[i].T << std::endl;
     }
-    std::cout << "Total mass = " << tot_mass << std::endl;
-    std::cout << "Total depth = " << tot_depth << std::endl;
+    logger << "Total mass = " << tot_mass << std::endl;
+    logger << "Total depth = " << tot_depth << std::endl;
 
     double z550 = getZ550();
     if (z550 > 0.){
-        std::cout << "z550 depth = " << z550 << std::endl;
+        logger << "z550 depth = " << z550 << std::endl;
     }
     double z830 = getZ830();
     if (z830 > 0.){
-        std::cout << "z830 depth = " << z830 << std::endl;
+        logger << "z830 depth = " << z830 << std::endl;
     }
 }
 
