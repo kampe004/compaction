@@ -1,2 +1,8 @@
-
-add_executable(dens.exe densification.cpp idealizedcoresite.cpp icecoresite.cpp dictionary.c iniparser.c )
+set(SOURCE
+    ${CMAKE_CURRENT_SOURCE_DIR}/densification.cpp 
+    ${CMAKE_CURRENT_SOURCE_DIR}/idealizedcoresite.cpp 
+    ${CMAKE_CURRENT_SOURCE_DIR}/icecoresite.cpp 
+    ${CMAKE_CURRENT_SOURCE_DIR}/dictionary.c 
+    ${CMAKE_CURRENT_SOURCE_DIR}/iniparser.c 
+    PARENT_SCOPE
+    )

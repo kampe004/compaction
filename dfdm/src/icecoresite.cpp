@@ -222,7 +222,7 @@ void IceCoreSite::printIceCoreSummary() {
     for (int i = gridsize()-1; i >= 0; i--) {
         tot_mass = tot_mass + grid[i].mass;
         tot_depth = tot_depth + grid[i].dz;
-        logger << "Layer " << gridsize()-i-1 << " : h=" << grid[i].dz << ", rho=" << grid[i].dens << ", T=" << grid[i].T << std::endl;
+        //logger << "Layer " << gridsize()-i-1 << " : h=" << grid[i].dz << ", rho=" << grid[i].dens << ", T=" << grid[i].T << std::endl;
     }
     logger << "Total mass = " << tot_mass << std::endl;
     logger << "Total depth = " << tot_depth << std::endl;
