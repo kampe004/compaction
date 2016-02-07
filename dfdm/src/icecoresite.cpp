@@ -202,15 +202,26 @@ void IceCoreSite::heatDiffusion(long dt) {
 }
 
 double IceCoreSite::getDepthOfDensity(double dens) {
-    double tot_depth = 0.0;
+    double tot_depth = 0.0; // interface depth
+    double diffi, diffip1;
+    double dzi, dzip1;
     for (int i = gridsize()-1; i >= 0; i--) {
-        tot_depth = tot_depth + grid[i].dz;
         if (grid[i].dens >= dens ){
-            // TODO: do some kind of interpolation here
-            return tot_depth;
+            diffi = grid[i].dens - dens; // delta 1
+            diffip1 = grid[i+1].dens - dens; // delta 2
+            
+            dzi = tot_depth + grid[i].dz / 2; // node depth
+            dzip1 = tot_depth - grid[i+1].dz / 2; // node depth
+
+            return diffi/(diffi+diffip1) * dzi + diffip1/(diffi+diffip1) * dzip1; // linear interpolation
         }
+        tot_depth = tot_depth + grid[i].dz;
     }
     return -1.0;
+}
+
+bool IceCoreSite::hasReachedDensity(double dens){
+    return this->getDepthOfDensity(dens) > 0.; 
 }
 
 double IceCoreSite::getZ550() {

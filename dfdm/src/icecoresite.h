@@ -68,6 +68,7 @@ public:
     void writeFiles();
 
     long getSecondsSinceStart();
+    bool hasReachedDensity(double dens);
 
     // member functions with implementation
     int gridsize() { return grid.size(); };
