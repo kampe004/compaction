@@ -34,6 +34,7 @@ import numpy as np
 
 logger = logging.getLogger('optimization')
 fdmexe = './dfdm/build/dfdm.exe'
+rootdir = os.getcwd()
 
 class FdmSettings:
     heat = "true"
@@ -50,10 +51,18 @@ class FdmSettings:
         print('heat = '+self.heat,file=f)
         print('compaction = '+self.compaction,file=f)
         print('',file=f)
+
         print('[overburden]',file=f)
         print('eta0 = '+str(self.eta0),file=f)
         print('c5 = '+str(self.c5),file=f)
         print('c6 = '+str(self.c6),file=f)
+        print('',file=f)
+
+        print('[forcing]',file=f)
+        print('dt = 21600 ; 6 hourly data ',file=f)
+        print('f_acc = '+rootdir+'/forcing/acc.core03.6H.nc',file=f)
+        print('f_wind10m = '+rootdir+'/forcing/w10m.core03.6H.nc',file=f)
+        print('f_tskin = '+rootdir+'/forcing/tskin.core03.6H.nc',file=f)
         f.close()
 
 kEval = 0 # number of cost function evalutions
@@ -61,7 +70,6 @@ kEval = 0 # number of cost function evalutions
 def cost_function(x):
     """ Single valued cost function as called by scipy """
     global kEval
-    rootdir = os.getcwd()
     state = FdmSettings(x)
     
     rundir = 'run'+str(kEval).zfill(3)
@@ -93,7 +101,7 @@ def optimize():
     x0 = np.asarray([9e5, 0.08,0.023]) # initial guess
 
     cost_function(x0)
-    cost_function(x0)
+    #cost_function(x0)
     #res = scipy.optimize.minimize(cost_function, x0, method='BFGS', tol=1e-3)
     #print(res)
     print('kEval = '+str(kEval))

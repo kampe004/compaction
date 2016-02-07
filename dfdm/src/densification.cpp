@@ -18,6 +18,7 @@
 #include "settings.h"
 #include "iniparser.h"
 #include "idealizedcoresite.h"
+#include "netcdfcoresite.h"
 
 namespace Densification{
 std::ofstream logger;
@@ -39,11 +40,24 @@ void readSettingsFromIniFile(char ininame[], Settings& s){
     s.c5 = iniparser_getdouble(d, "overburden:c5", -1.0);
     s.c6 = iniparser_getdouble(d, "overburden:c6", -1.0);
 
+    s.forcing_dt = iniparser_getint(d, "forcing:dt", -1);
+    tmp = iniparser_getstring(d, "forcing:f_acc", "NOT_SPECIFIED");
+    s.f_acc = std::string(tmp);
+    tmp = iniparser_getstring(d, "forcing:f_wind10m", "NOT_SPECIFIED");
+    s.f_wind10m = std::string(tmp);
+    tmp = iniparser_getstring(d, "forcing:f_tskin", "NOT_SPECIFIED");
+    s.f_tskin = std::string(tmp);
+
     logger << "INFO: general:compaction = " << tmp << std::endl;
     logger << "INFO: general:heat = " << s.heat << std::endl;
     logger << "INFO: overburden:eta0 = " << s.eta0 << std::endl;
     logger << "INFO: overburden:c5 = " << s.c5 << std::endl;
     logger << "INFO: overburden:c6 = " << s.c6 << std::endl;
+    logger << "INFO: forcing:dt = " << s.forcing_dt << std::endl;
+    logger << "INFO: forcing:f_acc = " << s.f_acc << std::endl;
+    logger << "INFO: forcing:f_w10m = " << s.f_wind10m << std::endl;
+    logger << "INFO: forcing:f_tskin = " << s.f_tskin << std::endl;
+
 
     iniparser_freedict(d);
 }
@@ -54,18 +68,17 @@ int main(){
     Settings settings;
     readSettingsFromIniFile(ininame, settings);
 
-    IdealizedCoreSite core(settings);
+    //IdealizedCoreSite core(settings);
+    NetcdfCoreSite core(settings);
     core.init();
 
     /* Time loop */
     long sec_in_3h = 3*3600;
     long dt = sec_in_3h;  // timestep of 3 hours in seconds
-    long dt_per_year = ((long)sec_in_year)/dt;
-    long nyears = 50;  // simulation duration in years
-    long Nt = (nyears*365*24*60*60)/dt; // number of points on time axis
+    long dt_per_year = sec_in_year/dt;
+    long nyears = 3;  // simulation duration in years
 
     logger << "INFO: dt=" << dt << std::endl;
-    logger << "INFO: Nt=" << Nt << std::endl;
     logger << "INFO: nyears=" << nyears << std::endl;
     logger << "INFO: dt_per_year=" << dt_per_year << std::endl;
     logger << "INFO: starting simulation of " << core.toString() << std::endl;

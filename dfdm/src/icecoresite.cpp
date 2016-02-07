@@ -30,9 +30,9 @@ IceCoreSite::IceCoreSite(Settings& settings) {
 void IceCoreSite::init(){
     // initialize grid with a very tiny top layer
     Layer layer;
-    layer.T       = this->surfaceTemperature();
-    layer.dens    = this->surfaceDensity();
-    layer.dz      = 0.001;
+    layer.T       = this->surfaceTemperature(current_time);
+    layer.dens    = this->surfaceDensity(current_time);
+    layer.dz      = 0.00001;
     layer.mass    = layer.dz * layer.dens; 
     grid.push_back(layer);
     is_initialized = true;
@@ -46,10 +46,11 @@ void IceCoreSite::runTimeStep(long dt) {
     accumulate(dt);
     compact(dt);
 
-    // check minimum thickness
+    // check minimum thickness, start with second layer (index N-2)
     int i = grid.size()-2;
     while (i >= 0 ) { // Use while instead of for-loop as size may change during loop
         if (grid[i].dz < dzmin && gridsize() > 1){
+            logger << "DEBUG: merging" << std::endl;
             // Layer is too thin, combine with neighbor
             if (i == 0  || grid[i-1].dz > grid[i+1].dz  ) {
                 /* CASE 1: Bottom layer can only be combined with the one above */
@@ -78,9 +79,13 @@ void IceCoreSite::runTimeStep(long dt) {
     current_time = current_time + dt;
 }
 
+long IceCoreSite::getSecondsSinceStart(){
+    return current_time;
+}
+
 void IceCoreSite::accumulate(long dt) {
-    double dens = this->surfaceDensity();
-    double acc = this->accumulationRate() * 1e-3 * dt;
+    double dens = this->surfaceDensity(current_time);
+    double acc = this->accumulationRate(current_time) * 1e-3 * dt; // convert from [mm/s] to [m]
     double dz = (rho_w/dens) * acc;
 
     Layer& top = grid.back();  // top layer
@@ -95,10 +100,11 @@ void IceCoreSite::accumulate(long dt) {
         layer.mass  = top.mass/5;
         layer.dz    = top.dz/5;
         layer.T     = top.T;
-        grid.push_back(layer);
 
         top.dz = top.dz * 4/5; 
         top.mass = top.mass * 4/5;
+
+        grid.push_back(layer);
     }
 }
 
@@ -117,8 +123,8 @@ void IceCoreSite::compactAr10T(long dt) {
     /*  Densification as equation [Ar10T] from Ligtenberg2011 */
     static const double E_c=60.e3; //#  (kJ/mol)
     static const double E_g=42.4e3; //# (kJ/mol)  
-    double acc_year = annualAccumulation(); 
-    double Tsmean = annualSurfaceTemperature();
+    double acc_year = annualIntegratedAccumulation(); 
+    double Tsmean = annualMeanSurfaceTemperature();
     double MO, C;
     for (int i = 0; i < gridsize(); i++) {
         if (grid[i].dens <= 550.){
@@ -174,7 +180,7 @@ void IceCoreSite::heatDiffusion(long dt) {
 
     // Dirichlet boundary condition at the top
     int Np = gridsize();
-    T_new[Np-1] = this->surfaceTemperature(); // # top boundary equal to surface temperature
+    T_new[Np-1] = this->surfaceTemperature(current_time); // # top boundary equal to surface temperature
 
     // Neumann boundary condition at the bottom
     T_new[0] = td[0]*dt/grid[0].dz * (grid[1].T-grid[0].T) + grid[0].T;

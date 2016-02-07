@@ -18,38 +18,35 @@
 
 namespace Densification{ 
 
-double IdealizedCoreSite::surfaceDensity() {
-    /* after Helsen (2008) */
-    double rho = -151.94+1.4266*(73.6+1.06*Tsmean+0.0669*acc+4.77*v_10m);
-    rho = 300.;
-    return rho;
+double IdealizedCoreSite::surfaceDensity(long time) {
+    /* 
+    Surface density after Helsen (2008) 
+    
+    time in seconds since start of the simulations
+    */
+    return -151.94+1.4266*(73.6+1.06*Tsmean+0.0669*acc+4.77*v_10m);
 }
 
-double IdealizedCoreSite::surfaceTemperature() {
+double IdealizedCoreSite::surfaceTemperature(long time) {
     /* """ Surface temperature (varies over time, cosine function) """ */
     double amp     = 10.0; // amplitude
     double period  = sec_in_year; // period of a year in sec
     double pi = 3.14;
-    double T       = amp*cos(2*pi*(double)current_time/period) + Tsmean;
+    double T       = amp*cos(2*pi*(double)time/period) + Tsmean;
     return T;
 }
 
-double IdealizedCoreSite::accumulationRate() {
+double IdealizedCoreSite::accumulationRate(long time) {
     return acc/sec_in_year;
 }
 
-double IdealizedCoreSite::annualAccumulation() {
+double IdealizedCoreSite::annualIntegratedAccumulation() {
     return acc;
 }
 
-double IdealizedCoreSite::annualSurfaceTemperature() {
+double IdealizedCoreSite::annualMeanSurfaceTemperature() {
     return Tsmean;
 }
-
-// double IdealizedCoreSite::annualSurfaceDensity();
-// {
-//     return 
-// }
 
 std::string IdealizedCoreSite::toString() {
     std::ostringstream s; 

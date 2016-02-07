@@ -6,7 +6,7 @@
 namespace Densification { 
 
 class IdealizedCoreSite: public IceCoreSite {
-    /// core with idealized forcing at the surface
+    /// core with idealized meteorological forcing
 private:
     typedef IceCoreSite super;
 
@@ -15,11 +15,11 @@ private:
     const double Tsmean = 250.; //  # annual mean surface temperature (K)
 
 protected:
-    double surfaceDensity();
-    double surfaceTemperature();
-    double accumulationRate();
-    double annualAccumulation();
-    double annualSurfaceTemperature();
+    double surfaceDensity(long time);
+    double surfaceTemperature(long time);
+    double accumulationRate(long time);
+    double annualIntegratedAccumulation();
+    double annualMeanSurfaceTemperature();
 //    double annualSurfaceDensity();
 
 public:

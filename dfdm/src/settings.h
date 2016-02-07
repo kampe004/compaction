@@ -7,7 +7,8 @@ enum class DensificationMethod {Ar10T, Overburden};
 
 typedef struct Settings Settings; // data container to hold user settings
 struct Settings {
-    /* general */
+
+    /* physics */
     bool heat;
     DensificationMethod dm;
 
@@ -15,6 +16,12 @@ struct Settings {
     double eta0;
     double c5;
     double c6;
+
+    /* meteorological forcing */
+    int forcing_dt; 
+    std::string f_acc; 
+    std::string f_wind10m;
+    std::string f_tskin;
 };
 }
 

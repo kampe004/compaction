@@ -38,8 +38,9 @@ private:
 
     double getDepthOfDensity(double dens);
 
-protected:
     long current_time = 0; // time in seconds since start of simulation
+
+protected:
 
     void accumulate(long dt);
     void compact(long dt);
@@ -50,11 +51,11 @@ protected:
     double getZ830();
  
     // pure virtual functions (must be implemented by derived class)
-    virtual double surfaceDensity() =0;
-    virtual double surfaceTemperature() =0;
-    virtual double accumulationRate() =0;
-    virtual double annualAccumulation() =0;
-    virtual double annualSurfaceTemperature() =0;
+    virtual double surfaceDensity(long time) =0;
+    virtual double surfaceTemperature(long time) =0;
+    virtual double accumulationRate(long time) =0;
+    virtual double annualIntegratedAccumulation() =0;
+    virtual double annualMeanSurfaceTemperature() =0;
 //    virtual double annualSurfaceDensity() =0;
 
 public:
@@ -65,6 +66,8 @@ public:
     void init();
     void runTimeStep(long dt);
     void writeFiles();
+
+    long getSecondsSinceStart();
 
     // member functions with implementation
     int gridsize() { return grid.size(); };
