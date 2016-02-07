@@ -64,6 +64,7 @@ void readSettingsFromIniFile(char ininame[], Settings& s){
 
 int main(){
     logger.open("densification.log");
+    logger.precision(16);
     char ininame[] = "settings.ini";
     Settings settings;
     readSettingsFromIniFile(ininame, settings);
@@ -76,25 +77,29 @@ int main(){
     long sec_in_3h = 3*3600;
     long dt = sec_in_3h;  // timestep of 3 hours in seconds
     long dt_per_year = sec_in_year/dt;
-    long nyears = 3;  // simulation duration in years
+    //long nyears = 3;  // simulation duration in years
+    int maxYear = 500;
 
     logger << "INFO: dt=" << dt << std::endl;
-    logger << "INFO: nyears=" << nyears << std::endl;
+//    logger << "INFO: nyears=" << nyears << std::endl;
     logger << "INFO: dt_per_year=" << dt_per_year << std::endl;
     logger << "INFO: starting simulation of " << core.toString() << std::endl;
 
     std::clock_t start;
-    for (int year = 0; year < nyears; year++){
+    int kYear = 0;
+    while(! core.hasReachedDensity(850.) && kYear < maxYear) {
+//    for (int year = 0; year < nyears; year++){
         start = clock();
         for(int tstep = 0; tstep < dt_per_year; tstep++)
             core.runTimeStep(dt);
         double elapsed = ((double)(clock() - start)) / CLOCKS_PER_SEC;
-        logger  << "year=" << year
+        logger  << "year=" << kYear
                 << ", Tmin=" << core.minTemp() 
                 << ", Tmax=" << core.maxTemp() 
                 << ", rho_max=" << core.maxDens()
                 << ", sec/year=" << elapsed 
                 << ", year/hour=" << 3600./elapsed << std::endl;
+        kYear++; 
     }
     core.printIceCoreSummary();
     core.writeFiles();
