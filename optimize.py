@@ -31,6 +31,7 @@ import sys, os, logging, datetime
 from subprocess import check_call
 import scipy.optimize
 import numpy as np
+import math
 
 logger = logging.getLogger('optimization')
 fdmexe = './dfdm/build/dfdm.exe'
@@ -65,11 +66,39 @@ class FdmSettings:
         print('f_tskin = '+rootdir+'/forcing/tskin.core03.6H.nc',file=f)
         f.close()
 
+    def toString(self):
+        print('eta0 = '+str(self.eta0))
+        print('c5 = '+str(self.c5))
+        print('c6 = '+str(self.c6))
+
+
 kEval = 0 # number of cost function evalutions
+
+class CacheLast(object):
+    """ Decorator function to workout bug that causes
+        twice the same function call 
+            https://github.com/scipy/scipy/issues/4076
+    """
+    def __init__(self, f):
+        self.f = f
+        self.last_x = None
+        self.last_f = None
+        self.ncall = 0
+
+    def __call__(self, x):
+        if np.all(x == self.last_x):
+            return self.last_f
+        else:
+            self.last_x = x
+            self.last_f = self.f(x)
+            self.ncall += 1
+            return self.last_f
+
 
 def cost_function(x):
     """ Single valued cost function as called by scipy """
     global kEval
+    print(repr(x))
     state = FdmSettings(x)
     
     rundir = 'run'+str(kEval).zfill(3)
@@ -89,22 +118,36 @@ def cost_function(x):
     check_call(args)
 
     # compute cost function
+    z550_target = 7.00
+    z830_target = 55.
+    f = open('z550.txt', 'r')
+    z550 = float(f.readline())
+    f.close()
+    f = open('z830.txt', 'r')
+    z830 = float(f.readline())
+    f.close()
+
+    if (z550 < 0 or z830 < 0):
+        # simulation reached maxYear without attaining target density
+        cost = 1e9
+    else:
+        cost = abs(z550-z550_target) + abs(z830-z830_target)
 
     os.chdir(rootdir)
-    kEval += 1
-    return abs(x[1])
 
+    kEval += 1
+    print('kEval = '+str(kEval)+', cost = '+str(cost))
+    return cost
 
 def optimize(): 
     initialize_logging()
 
     x0 = np.asarray([9e5, 0.08,0.023]) # initial guess
+    func = CacheLast(cost_function) 
+    res = scipy.optimize.minimize(func, x0, bounds=[(8e5,10e5), (0.02, 0.16), (0.02,0.025)], method='L-BFGS-B')
+    #res = scipy.optimize.minimize(func, x0, method='BFGS')
 
-    cost_function(x0)
-    #cost_function(x0)
-    #res = scipy.optimize.minimize(cost_function, x0, method='BFGS', tol=1e-3)
-    #print(res)
-    print('kEval = '+str(kEval))
+    print(res)
 
 
 def initialize_logging():
