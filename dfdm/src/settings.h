@@ -8,9 +8,10 @@ enum class DensificationMethod {Ar10T, Overburden};
 typedef struct Settings Settings; // data container to hold user settings
 struct Settings {
 
-    /* physics */
+    /* general stuff (physics used etc) */
     bool heat;
     DensificationMethod dm;
+    double max_depth; // maximum depth of 1D firn model at which to consider the simulation as failed (prevents excessive runtimes)
 
     /* overburden parameters */
     double eta0;

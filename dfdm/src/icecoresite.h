@@ -69,6 +69,7 @@ public:
 
     long getSecondsSinceStart();
     bool hasReachedDensity(double dens);
+    double totalDepth();
 
     // member functions with implementation
     int gridsize() { return grid.size(); };

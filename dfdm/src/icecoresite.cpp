@@ -13,6 +13,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <cmath>
 
 #include "icecoresite.h"
 #include "logging.h"
@@ -202,22 +203,25 @@ void IceCoreSite::heatDiffusion(long dt) {
 }
 
 double IceCoreSite::getDepthOfDensity(double dens) {
-    double tot_depth = 0.0; // interface depth
     double diffi, diffip1;
     double dzi, dzip1;
-    for (int i = gridsize()-1; i >= 0; i--) {
+    int tidx = gridsize()-1; // index of top layer
+    if (grid[tidx].dens >= dens) return grid[tidx].dz/2; // node depth of top layer
+
+    double tot_depth = grid[tidx].dz; // interface depth
+    for (int i = tidx-1; i >= 0; i--) {
         if (grid[i].dens >= dens ){
-            diffi = grid[i].dens - dens; // delta 1
-            diffip1 = grid[i+1].dens - dens; // delta 2
+            diffi = std::abs(grid[i].dens - dens); // delta 1
+            diffip1 = std::abs(grid[i+1].dens - dens); // delta 2
             
             dzi = tot_depth + grid[i].dz / 2; // node depth
             dzip1 = tot_depth - grid[i+1].dz / 2; // node depth
 
-            return diffi/(diffi+diffip1) * dzi + diffip1/(diffi+diffip1) * dzip1; // linear interpolation
+            return diffi/(diffi+diffip1) * dzip1 + diffip1/(diffi+diffip1) * dzi; // linear interpolation
         }
         tot_depth = tot_depth + grid[i].dz;
     }
-    return -1.0;
+    return -1.0; // dens not found
 }
 
 bool IceCoreSite::hasReachedDensity(double dens){
@@ -230,6 +234,14 @@ double IceCoreSite::getZ550() {
 
 double IceCoreSite::getZ830() {
     return getDepthOfDensity(830.);
+}
+
+double IceCoreSite::totalDepth() {
+    double tot_depth = 0;
+    for (int i = gridsize()-1; i >= 0; i--) {
+        tot_depth = tot_depth + grid[i].dz;
+    };
+    return tot_depth;
 }
 
 void IceCoreSite::printIceCoreSummary() {
