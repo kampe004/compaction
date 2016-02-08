@@ -121,7 +121,9 @@ void IceCoreSite::compact(long dt) {
 }
 
 void IceCoreSite::compactAr10T(long dt) {
-    /*  Densification as equation [Ar10T] from Ligtenberg2011 */
+    /*  Densification as equation [Ar10T] from Ligtenberg2011
+        with additional scaling parameters MO for Antarctica
+         */
     static const double E_c=60.e3; //#  (kJ/mol)
     static const double E_g=42.4e3; //# (kJ/mol)  
     double acc_year = annualIntegratedAccumulation(); 

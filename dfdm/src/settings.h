@@ -12,6 +12,7 @@ struct Settings {
     bool heat;
     DensificationMethod dm;
     double max_depth; // maximum depth of 1D firn model at which to consider the simulation as failed (prevents excessive runtimes)
+    int max_year;
 
     /* overburden parameters */
     double eta0;

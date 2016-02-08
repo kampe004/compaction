@@ -33,10 +33,14 @@ void readSettingsFromIniFile(char ininame[], Settings& s){
     const char * tmp = iniparser_getstring(d, "general:compaction", "NOT_SPECIFIED");
     if (std::string(tmp) == "overburden"){
         s.dm = DensificationMethod::Overburden;
-    } else {
+    } else if (std::string(tmp) == "Ar10T"){
         s.dm = DensificationMethod::Ar10T;
+    } else {
+        logger << "ERROR: unknown densification method '" << std::string(tmp) << "'" << std::endl;
+        std::abort();
     }
     s.max_depth = iniparser_getdouble(d, "general:max_depth", 200.0);
+    s.max_year = iniparser_getint(d, "general:max_year", 4000);
     
     s.eta0 = iniparser_getdouble(d, "overburden:eta0", -1.0);
     s.c5 = iniparser_getdouble(d, "overburden:c5", -1.0);
@@ -53,6 +57,7 @@ void readSettingsFromIniFile(char ininame[], Settings& s){
     logger << "INFO: general:compaction = " << tmp << std::endl;
     logger << "INFO: general:heat = " << s.heat << std::endl;
     logger << "INFO: general:max_depth = " << s.max_depth << std::endl;
+    logger << "INFO: general:max_year = " << s.max_year << std::endl;
     logger << "INFO: overburden:eta0 = " << s.eta0 << std::endl;
     logger << "INFO: overburden:c5 = " << s.c5 << std::endl;
     logger << "INFO: overburden:c6 = " << s.c6 << std::endl;
@@ -80,8 +85,6 @@ int main(){
     long sec_in_3h = 3*3600;
     long dt = sec_in_3h;  // timestep of 3 hours in seconds
     long dt_per_year = sec_in_year/dt;
-    //long nyears = 3;  // simulation duration in years
-    int maxYear = 2500;
 
     logger << "INFO: dt=" << dt << std::endl;
 //    logger << "INFO: nyears=" << nyears << std::endl;
@@ -90,7 +93,7 @@ int main(){
 
     std::clock_t start;
     int kYear = 0;
-    while(! core.hasReachedDensity(850.) && kYear < maxYear && core.totalDepth() < settings.max_depth) {
+    while(! core.hasReachedDensity(850.) && kYear < settings.max_year && core.totalDepth() < settings.max_depth) {
 //    for (int year = 0; year < nyears; year++){
         start = clock();
         for(int tstep = 0; tstep < dt_per_year; tstep++)
