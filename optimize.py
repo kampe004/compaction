@@ -39,7 +39,7 @@ now = datetime.datetime.now().strftime("%Y%m%d-%H%M")
 rootdir = os.getcwd()
 
 class FdmSettings:
-    heat = "true"
+    heat = "false"
     compaction = "overburden"
     
     def __init__(self, x):
@@ -47,8 +47,13 @@ class FdmSettings:
         self.eta0   = (x[0] + 1) * 9e5
         self.c5     = (x[1] + 1) * 0.08
         self.c6     = (x[2] + 1) * 0.023
-        logger.info('x[0] = ' + str(x[0])+', x[1] = ' + str(x[1])+', x[2] = ' + str(x[2]))
-        logger.info('eta0 = ' + str(self.eta0) + ', c5 = '+str(self.c5)+', c6 = '+str(self.c6))
+        self.rho_s  = (x[3] + 1) * 150
+
+        #for i, xi in enumerate(x):
+        #    logger.info('x['+str(i)+'] = '+str(xi))
+
+        logger.info('x[0] = ' + str(x[0])+', x[1] = ' + str(x[1])+', x[2] = ' + str(x[2])+ ', x[3] = '+ str(x[3]))
+        logger.info('eta0 = ' + str(self.eta0) + ', c5 = '+str(self.c5)+', c6 = '+str(self.c6)+', rho_s = '+str(self.rho_s))
 
     def writeIniFileWithParameters(self, inifile):
         global max_depth
@@ -60,6 +65,10 @@ class FdmSettings:
         print('compaction = '+self.compaction,file=f)
         print('max_depth = '+str(max_depth),file=f)
         print('max_year = '+str(max_year),file=f)
+        print('',file=f)
+
+        print('[density]',file=f)
+        print('rho_s = '+str(self.rho_s),file=f)
         print('',file=f)
 
         print('[overburden]',file=f)
@@ -96,8 +105,8 @@ def cost_function(x):
     global max_depth, max_year
     global problem
 
-    max_depth = 150. # maximum depth of 1D firn model at which to consider the simulation as failed (prevents excessive runtimes)
-    max_year = 5000 # maximum number of years at which to consider the simulation as failed
+    max_depth = 125. # maximum depth of 1D firn model at which to consider the simulation as failed (prevents excessive runtimes)
+    max_year = 3500 # maximum number of years at which to consider the simulation as failed
 
     state = FdmSettings(x)
     
@@ -128,11 +137,11 @@ def cost_function(x):
         # normal termination
         cost = abs(z550-problem.z550) + abs(z830-problem.z830)
     elif (z830 < 0 and z550 > 0):
-        # simulation reached maxYear without attaining z830
-        cost = abs(z550-problem.z550) + 100
+        # simulation exited by maxYear or maxDepth without attaining z830
+        cost = abs(z550-problem.z550) + 400
     else:
         # simulation reached maxYear without attaining any target density
-        cost = 1e4 + 1e3 * sum(x**2)
+        cost = 1e4 * (1+sum(abs(x)))
 
     os.chdir(outdir)
 
@@ -186,14 +195,22 @@ def optimize():
         SLSQP       stops after 2 iterations,  message: 'Positive directional derivative for linesearch'
     """
     #x0 = np.asarray([0, 0.08,0.023]) # initial guess
-    x0 = np.asarray([0,0,0]) # initial guess
+    x0 = np.asarray([0,0,0,0]) # initial guess
+
+    #INFO x[0] = 0.135104056169, x[1] = 0.135183621789, x[2] = 0.135920060328, x[3] = -0.0489701430606
+    # warm start
+    x0 = np.asarray([0.135104056169,0.135183621789,0.135920060328, -0.0489701430606])
+
     #res = scipy.optimize.minimize(func, x0, bounds=[(-1e-3,1e-3)], method='L-BFGS-B')
     #res = scipy.optimize.minimize(func, x0, bounds=[(8e5,10e5), (0.02, 0.16), (0.02,0.025)], method='L-BFGS-B')
     #res = scipy.optimize.minimize(func, x0, bounds=[(-1e-3,1e-3), (0.02, 0.16), (0.02, 0.026)], method='L-BFGS-B')
-    minbound = -0.1
-    maxbound = 0.1
+    minbound = -1.
+    maxbound = 1.
     eps = 1e-3
-    res = scipy.optimize.minimize(func, x0, bounds=[(minbound,maxbound), (minbound,maxbound), (minbound,maxbound)], method='L-BFGS-B', options={'eps':eps})
+    res = scipy.optimize.minimize(func, x0, bounds=[(minbound,maxbound), 
+                                                    (minbound,maxbound), 
+                                                    (minbound,maxbound), 
+                                                    (-0.5,0.5)], method='L-BFGS-B', options={'eps':eps})
     logger.info(res)
 
 
