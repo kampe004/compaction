@@ -20,12 +20,8 @@
 
 namespace Densification{ 
 
-IceCoreSite::IceCoreSite(Settings& settings) {
-    densification_method = settings.dm;
-    have_diffusion = settings.heat;
-    eta0 = settings.eta0;
-    c5 = settings.c5;
-    c6 = settings.c6;
+IceCoreSite::IceCoreSite(Settings& s) {
+    settings = s;
 }
 
 void IceCoreSite::init(){
@@ -51,7 +47,7 @@ void IceCoreSite::runTimeStep(long dt) {
     int i = grid.size()-2;
     while (i >= 0 ) { // Use while instead of for-loop as size may change during loop
         if (grid[i].dz < dzmin && gridsize() > 1){
-            logger << "DEBUG: merging" << std::endl;
+            //logger << "DEBUG: merging" << std::endl;
             // Layer is too thin, combine with neighbor
             if (i == 0  || grid[i-1].dz > grid[i+1].dz  ) {
                 /* CASE 1: Bottom layer can only be combined with the one above */
@@ -70,10 +66,15 @@ void IceCoreSite::runTimeStep(long dt) {
     }
 
     // remove bottom layers that have attained ice density
-    while(grid.front().dens > 900.) 
-        grid.erase(grid.begin());
+    //while(grid.front().dens > 900.) 
+    //    grid.erase(grid.begin());
+    if (grid.front().dens > 900.) {
+    for (int i = 0; i < gridsize(); i++) {
+        logger << "i = " << i << " dens = " << grid[i].dens << "\n";
+       } 
+    }
 
-    if (have_diffusion && gridsize() > 1)
+    if (settings.have_diffusion && gridsize() > 1)
         heatDiffusion(dt);
 
     // update internal time variable
@@ -110,17 +111,21 @@ void IceCoreSite::accumulate(long dt) {
 }
 
 void IceCoreSite::compact(long dt) {
-    if (densification_method == DensificationMethod::Ar10T) {
-        compactAr10T(dt);
-    } else if (densification_method == DensificationMethod::Overburden) {
-        compactOverburden(dt);
-    } else {
-        logger << "ERROR: unknown densification method" << std::endl;
-        std::abort();
+    // enum class DensificationMethod {Ligtenberg2011, Anderson1976, Barnola1991, Spencer2001, BarnolaSpencer}
+    switch (settings.dm) {
+        case DensificationMethod::Ligtenberg2011 : compactLigtenberg2011(dt); break;
+        case DensificationMethod::Anderson1976   : compactAnderson1976(dt); break;
+        case DensificationMethod::Barnola1991    : compactBarnola1991(dt); break;
+        case DensificationMethod::Spencer2001    : //compactSpencer2001(dt); break;
+        case DensificationMethod::BarnolaSpencer : //compactBarnolaSpencer(dt); break;
+        case DensificationMethod::HerronLangway  : compactHerronLangway(dt); break;
+        default:
+            logger << "ERROR: programmer error: unknown densification method" << std::endl;
+            std::abort();
     }
 }
 
-void IceCoreSite::compactAr10T(long dt) {
+void IceCoreSite::compactLigtenberg2011(long dt) {
     /*  Densification as equation [Ar10T] from Ligtenberg2011
         with additional scaling parameters MO for Antarctica
          */
@@ -142,7 +147,7 @@ void IceCoreSite::compactAr10T(long dt) {
     }
 }
 
-void IceCoreSite::compactOverburden(long dt) {
+void IceCoreSite::compactAnderson1976(long dt) {
     /* Compaction due to destructive metamorphism (Anderson 1976) and overburden (Anderson 1976) */
     /* Formulas taken from CLM 4.5 Tech Note */
     static const double Tf = T0;
@@ -157,7 +162,7 @@ void IceCoreSite::compactOverburden(long dt) {
         double c1 = exp(-0.046*(grid[i].dens-100.)); // # assuming density above 100 kg/m3
         double c2 = 1 ; //# assuming no liquid
         double cr1 = -c3*c2*c1*exp(-c4*(Tf-grid[i].T)); // # compaction due to destructive metamorphism
-        double eta = eta0 * exp(c5*(Tf-grid[i].T) + c6*grid[i].dens); //# viscocity, assuming no liquid
+        double eta = settings.eta0 * exp(settings.c5*(Tf-grid[i].T) + settings.c6*grid[i].dens); //# viscocity, assuming no liquid
         double cr2 = -P/eta;
 
         double cr = cr1 + cr2;
@@ -165,6 +170,63 @@ void IceCoreSite::compactOverburden(long dt) {
         grid[i].dens = (grid[i].mass/grid[i].dz); // # mass conservation
 
         overburden = overburden + grid[i].mass;
+    }
+}
+
+void IceCoreSite::compactHerronLangway(long dt) {
+    /*  Densification as Herron & Langway 1980 
+        emperical model from the analysis of several Antarctic 
+        and Greenland ice core density profiles  
+    */
+    double overburden = 0;
+    for (int i = gridsize()-1; i >= 0; i--) {
+        if (grid[i].dens <= 550.){
+            double k0 = 11. * exp(-10160. / (R*grid[i].T));
+            grid[i].dens = grid[i].dens + ((double)dt/sec_in_year) * k0 * annualIntegratedAccumulation() * 1e-3 * (rho_i - grid[i].dens);
+        } else { 
+            double k1 = 575. * exp(-21400. / (R*grid[i].T));
+            grid[i].dens = grid[i].dens + ((double)dt/sec_in_year) * k1 * sqrt(annualIntegratedAccumulation()*1e-3) * (rho_i - grid[i].dens);
+        }
+        grid[i].dz = grid[i].mass/grid[i].dens; // # mass conservation
+    }
+}
+
+void IceCoreSite::compactBarnola1991(long dt) {
+    /*  Densification as Barnola & Pimienta 1991 
+        From the surface to rho = 550 kg/m3 the Herron & Langway expression
+        is used, below 550 the Pimienta expression.
+      */
+    double overburden = 0;
+    for (int i = gridsize()-1; i >= 0; i--) {
+        if (grid[i].dens <= 550.){
+            // Herron & Langway
+            double k0 = 11. * exp(-10160./(R*grid[i].T));
+            grid[i].dens = grid[i].dens + ((double)dt/sec_in_year) * k0 * annualIntegratedAccumulation() * 1e-3 * (rho_i - grid[i].dens);
+        } else { 
+            // Barnola & Pimienta 1991
+            double A0 = 2.54e4; // in the original paper: [2.54e4 MPa^-3 s-1] 
+            double Q = 60.e3; // activation energy 60e3 [J/mol] = 60 [kJ/mol]
+            double ff;    
+            if (grid[i].dens <= 800.){
+                // f_e
+                double alpha = -37.455;
+                double beta = 99.743;
+                double delta = -95.027;
+                double gamma = 30.673;
+                double dens_g_cm3 = grid[i].dens * 1e-3; // convert from kg/m3 to g/cm3
+                double exponent = alpha*pow(dens_g_cm3,3) + beta*pow(dens_g_cm3,2) + delta*dens_g_cm3 + gamma;
+                //logger << "DEBUG exponent = " << exponent << "\n";
+                ff = pow(10, exponent);
+            } else {
+                // f_s
+                ff = (3./16.) * (1-grid[i].dens/rho_i) / pow(1 - pow(1-grid[i].dens/rho_i, 1./3.),3);
+            }
+            double P = (overburden + 0.5*grid[i].mass)*g*1e-6/1.0;  // 1 Pa = 1 kg / (m * s2). We have unit area, convert to MPa
+            grid[i].dens = grid[i].dens + (double)dt * A0*exp(-Q/(R*grid[i].T)) * ff * pow(P,3.0) * grid[i].dens; 
+        }
+        grid[i].dz = grid[i].mass/grid[i].dens; // # mass conservation
+        overburden = overburden + grid[i].mass;
+        //logger << "DEBUG dens =  = " << grid[i].dens << "\n";
     }
 }
 
@@ -189,13 +251,13 @@ void IceCoreSite::heatDiffusion(long dt) {
     T_new[0] = td[0]*dt/grid[0].dz * (grid[1].T-grid[0].T) + grid[0].T;
 
     for (int i = 1; i < gridsize()-1; i++) {
-        double stab_crit = td[i] * dt / pow(grid[i].dz,2);
-        if (stab_crit > 0.5) {
-            logger << "ERROR: stability criterium violated, r = " << stab_crit << std::endl;
-            std::abort();
-        } else {
+        //double stab_crit = td[i] * dt / pow(grid[i].dz,2);
+        //if (stab_crit > 0.5) {
+        //    logger << "ERROR: stability criterium violated, r = " << stab_crit << std::endl;
+        //    std::abort();
+        //} else {
             T_new[i] = td[i]*dt/pow(grid[i].dz,2)*(grid[i-1].T-2*grid[i].T+grid[i+1].T) + grid[i].T; // # Forward in Time Centered in Space
-        }
+        //}
     }
 
     // Update temperatures
@@ -291,14 +353,8 @@ void IceCoreSite::writeFiles() {
 std::string IceCoreSite::toString()
 { 
     std::ostringstream s; 
-    if (densification_method == DensificationMethod::Ar10T) {
-        s << "Ar10T"; 
-    } else if (densification_method == DensificationMethod::Overburden) {
-        s << "Overburden" << "_" << eta0 << "_" << c5 << "_" << c6;
-    } else {
-        s << "UNKNOWN"; 
-    }
-    if (have_diffusion) {
+    s << settings.dm;
+    if (settings.have_diffusion) {
         s << "_heatTrue";
     } else {
         s << "_heatFalse";

@@ -19,17 +19,13 @@
 #include <cmath>
 #include <netcdf>
 #include <iomanip>
+#include <numeric>
 
 #include "settings.h"
 #include "logging.h"
 #include "netcdfcoresite.h"
 
 namespace Densification{ 
-
-NetcdfCoreSite::NetcdfCoreSite() {
-    logger << "ERROR: can't start NetcdfCoreSite without INI file, need forcing file path names" << std::endl;
-    std::abort();
-}
 
 NetcdfCoreSite::NetcdfCoreSite(Settings& settings) : IceCoreSite(settings) {
     readForcing(settings);
@@ -101,7 +97,8 @@ void NetcdfCoreSite::readForcing(Settings& settings){
 
 double NetcdfCoreSite::surfaceDensity(long time) {
     /* after Helsen (2008) */
-    return -151.94+1.4266*(73.6+1.06*Ts_ann_mean+0.0669*acc_ann_mean+4.77*w10m_ann_mean);
+    //return -151.94+1.4266*(73.6+1.06*Ts_ann_mean+0.0669*acc_ann_mean+4.77*w10m_ann_mean);
+    return settings.rho_s;
 }
 
 double NetcdfCoreSite::surfaceTemperature(long time) {

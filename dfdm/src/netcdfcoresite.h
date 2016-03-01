@@ -8,6 +8,19 @@ namespace Densification {
 
 class NetcdfCoreSite: public IceCoreSite {
     /// core with meteorological forcing from NetCDF files
+
+public:
+    NetcdfCoreSite(Settings& settings);
+    std::string toString();
+
+protected:
+    double surfaceDensity(long time);
+    double surfaceTemperature(long time);
+    double accumulationRate(long time);
+    double annualIntegratedAccumulation();
+    double annualMeanSurfaceTemperature();
+//    double annualSurfaceDensity();
+
 private:
     typedef IceCoreSite super;
 
@@ -25,20 +38,7 @@ private:
 
     void readForcing(Settings& settings);
 
-protected:
-    double surfaceDensity(long time);
-    double surfaceTemperature(long time);
-    double accumulationRate(long time);
-    double annualIntegratedAccumulation();
-    double annualMeanSurfaceTemperature();
-//    double annualSurfaceDensity();
-
-public:
-    NetcdfCoreSite();
-    NetcdfCoreSite(Settings& settings);
-    std::string toString();
 };
-
 }
 
 #endif

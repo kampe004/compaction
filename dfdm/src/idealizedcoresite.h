@@ -7,12 +7,10 @@ namespace Densification {
 
 class IdealizedCoreSite: public IceCoreSite {
     /// core with idealized meteorological forcing
-private:
-    typedef IceCoreSite super;
 
-    const double acc=300.; // #Average Anual accumulation (mm/yr)
-    const double v_10m=10.; //   ;#10m windspeed (m/s)
-    const double Tsmean = 250.; //  # annual mean surface temperature (K)
+public:
+    IdealizedCoreSite(Settings& settings) : IceCoreSite(settings) {};
+    std::string toString();
 
 protected:
     double surfaceDensity(long time);
@@ -22,10 +20,12 @@ protected:
     double annualMeanSurfaceTemperature();
 //    double annualSurfaceDensity();
 
-public:
-    IdealizedCoreSite() {};
-    IdealizedCoreSite(Settings& settings) : IceCoreSite(settings) {};
-    std::string toString();
+private:
+    typedef IceCoreSite super;
+
+    const double acc=34.; // #Average Anual accumulation (mm/yr)
+    const double v_10m=9.; //   ;#10m windspeed (m/s)
+    const double Tsmean = 273.15 - 53; //  # annual mean surface temperature (K)
 };
 
 }

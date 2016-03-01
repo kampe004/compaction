@@ -21,7 +21,22 @@
 #include "netcdfcoresite.h"
 
 namespace Densification{
-std::ofstream logger;
+// need unique instance of logger in namespace
+std::ofstream logger; 
+
+// need unique implementation of DensificationMethod << operator in namespace
+std::ostream& operator<<(std::ostream& os, DensificationMethod dm) {
+    switch (dm) {
+        case DensificationMethod::Ligtenberg2011    : os << "Ligtenberg"; break;
+        case DensificationMethod::Anderson1976      : os << "Anderson"; break;
+        case DensificationMethod::Barnola1991       : os << "Barnola"; break;
+        case DensificationMethod::Spencer2001       : os << "Spencer"; break;
+        case DensificationMethod::BarnolaSpencer    : os << "BarnolaSpencer"; break;
+        case DensificationMethod::HerronLangway     : os << "HerronLangway"; break;
+        default                                     : os.setstate(std::ios_base::failbit);
+    }
+    return os;
+}
 }
 
 using namespace Densification; 
@@ -29,18 +44,30 @@ using namespace Densification;
 void readSettingsFromIniFile(char ininame[], Settings& s){
     dictionary* d = iniparser_load(ininame);
 
-    s.heat = iniparser_getboolean(d, "general:heat", -1);
+    s.have_diffusion = iniparser_getboolean(d, "general:heat", -1);
     const char * tmp = iniparser_getstring(d, "general:compaction", "NOT_SPECIFIED");
-    if (std::string(tmp) == "overburden"){
-        s.dm = DensificationMethod::Overburden;
-    } else if (std::string(tmp) == "Ar10T"){
-        s.dm = DensificationMethod::Ar10T;
+    
+    // enum class DensificationMethod {Ligtenberg2011, Anderson1976, Barnola1991, Spencer2001, BarnolaSpencer}
+    if (std::string(tmp) == "Ligtenberg2011"){
+        s.dm = DensificationMethod::Ligtenberg2011;
+    } else if (std::string(tmp) == "Anderson1976"){
+        s.dm = DensificationMethod::Anderson1976;
+    } else if (std::string(tmp) == "Barnola1991"){
+        s.dm = DensificationMethod::Barnola1991;
+    } else if (std::string(tmp) == "Spencer2001"){
+        s.dm = DensificationMethod::Spencer2001;
+    } else if (std::string(tmp) == "BarnolaSpencer"){
+        s.dm = DensificationMethod::BarnolaSpencer;
+    } else if (std::string(tmp) == "HerronLangway"){
+        s.dm = DensificationMethod::HerronLangway;
     } else {
-        logger << "ERROR: unknown densification method '" << std::string(tmp) << "'" << std::endl;
+        logger << "ERROR: unknown densification method: '" << std::string(tmp) << "'" << std::endl;
         std::abort();
     }
     s.max_depth = iniparser_getdouble(d, "general:max_depth", 200.0);
     s.max_year = iniparser_getint(d, "general:max_year", 4000);
+
+    s.rho_s = iniparser_getdouble(d, "density:rho_s", 100.0);
     
     s.eta0 = iniparser_getdouble(d, "overburden:eta0", -1.0);
     s.c5 = iniparser_getdouble(d, "overburden:c5", -1.0);
@@ -55,9 +82,10 @@ void readSettingsFromIniFile(char ininame[], Settings& s){
     s.f_tskin = std::string(tmp);
 
     logger << "INFO: general:compaction = " << tmp << std::endl;
-    logger << "INFO: general:heat = " << s.heat << std::endl;
+    logger << "INFO: general:heat = " << s.have_diffusion << std::endl;
     logger << "INFO: general:max_depth = " << s.max_depth << std::endl;
     logger << "INFO: general:max_year = " << s.max_year << std::endl;
+    logger << "INFO: density:rho_s = " << s.rho_s << std::endl;
     logger << "INFO: overburden:eta0 = " << s.eta0 << std::endl;
     logger << "INFO: overburden:c5 = " << s.c5 << std::endl;
     logger << "INFO: overburden:c6 = " << s.c6 << std::endl;
@@ -77,8 +105,8 @@ int main(){
     Settings settings;
     readSettingsFromIniFile(ininame, settings);
 
-    //IdealizedCoreSite core(settings);
-    NetcdfCoreSite core(settings);
+    IdealizedCoreSite core(settings);
+    //NetcdfCoreSite core(settings);
     core.init();
 
     /* Time loop */
