@@ -116,8 +116,8 @@ void IceCoreSite::compact(long dt) {
         case DensificationMethod::Ligtenberg2011 : compactLigtenberg2011(dt); break;
         case DensificationMethod::Anderson1976   : compactAnderson1976(dt); break;
         case DensificationMethod::Barnola1991    : compactBarnola1991(dt); break;
-        case DensificationMethod::Spencer2001    : //compactSpencer2001(dt); break;
-        case DensificationMethod::BarnolaSpencer : //compactBarnolaSpencer(dt); break;
+        case DensificationMethod::Spencer2001    : compactSpencer2001(dt); break;
+//        case DensificationMethod::BarnolaSpencer : compactBarnolaSpencer(dt); break;
         case DensificationMethod::HerronLangway  : compactHerronLangway(dt); break;
         default:
             logger << "ERROR: programmer error: unknown densification method" << std::endl;
@@ -178,7 +178,6 @@ void IceCoreSite::compactHerronLangway(long dt) {
         emperical model from the analysis of several Antarctic 
         and Greenland ice core density profiles  
     */
-    double overburden = 0;
     for (int i = gridsize()-1; i >= 0; i--) {
         if (grid[i].dens <= 550.){
             double k0 = 11. * exp(-10160. / (R*grid[i].T));
@@ -222,6 +221,7 @@ void IceCoreSite::compactBarnola1991(long dt) {
                 ff = (3./16.) * (1-grid[i].dens/rho_i) / pow(1 - pow(1-grid[i].dens/rho_i, 1./3.),3);
             }
             double P = (overburden + 0.5*grid[i].mass)*g*1e-6/1.0;  // 1 Pa = 1 kg / (m * s2). We have unit area, convert to MPa
+            //P = P*rho_i/grid[i].dens; // convert to grain-load stress LvK
             grid[i].dens = grid[i].dens + (double)dt * A0*exp(-Q/(R*grid[i].T)) * ff * pow(P,3.0) * grid[i].dens; 
         }
         grid[i].dz = grid[i].mass/grid[i].dens; // # mass conservation
@@ -230,6 +230,67 @@ void IceCoreSite::compactBarnola1991(long dt) {
     }
 }
 
+void IceCoreSite::compactSpencer2001(long dt) {
+    /*  Densification as Spencer2001
+        Three stages are defined:
+            1) rho < 550.
+            2) rho > 550. but below close-off density (COD)
+            3) rho > COD
+        In the paper, COD is made dependent on temperature at the close-off density Tc (usually
+        quite close to T10m) using the following expression:
+            COD = [944.6 - 6.15e-2 * Tc - 1.52e-5 * Tc**2] / [0.959 + 6.59e-4 * Tc - 3.62e-8 * Tc**2] 
+      */
+    double overburden = 0;
+    double Peff;
+
+    double Tc = grid[0].T; // Take temperature at bottom as Tc to avoid recalculation of Tc at every layer TODO: use layer temperature
+    double rho_cod = (944.6 - 6.15e-2 * Tc - 1.52e-5 * pow(Tc,2)) / (0.959 + 6.59e-4 * Tc - 3.62e-8 * pow(Tc,2));
+
+    double C1,C2,C3,C4,C5;
+
+    for (int i = gridsize()-1; i >= 0; i--) {
+        Peff = (overburden + 0.5*grid[i].mass)*g;  // 1 Pa = 1 kg / (m * s2). We have unit area by which we divide (not shown)
+ //       std::cout << "DEBUG Peff = " << Peff << std::endl;
+        Peff = Peff*rho_i/grid[i].dens; // correction for relative density 
+//        std::cout << "DEBUG Peff = " << Peff << std::endl;
+        // TODO: correction for relative grain-contact area
+        
+        if (grid[i].dens < 550.) {
+            C1 = 3.38e9; // per annum
+            C2 = 46.8e3;  // converted from kJ to J
+            C3 = 0.000121;
+            C4 = -0.689;
+            C5 = -0.149;        
+        } else if (grid[i].dens < rho_cod) {
+            C1 = 9.06e8;
+            C2 = 41.0e3;
+            C3 = 0.0856;
+            C4 = -1.05;
+            C5 = -0.0202;
+        } else {
+            C1 = 1.38e7;
+            C2 = 30.1e3;
+            C3 = 0.284;
+            C4 = -0.0734;
+            C5 = 0.00322;
+        }
+        
+        C1 = C1 /(double) sec_in_year; // per annum to per second
+//        std::cout << "DEBUG C1 = " << C1 << std::endl;
+//        std::cout << "DEBUG dens = " << grid[i].dens << std::endl;
+        grid[i].dens = grid[i].dens + (double)dt * grid[i].dens * 
+            C1 * exp(-C2/(R*grid[i].T)) *
+            (1.-grid[i].dens/rho_i) *
+            pow(1.-pow(1.-grid[i].dens/rho_i,C3),C4) * 
+            pow(Peff,C5);
+
+//        std::cout << "DEBUG dens = " << grid[i].dens << std::endl;
+        grid[i].dz = grid[i].mass/grid[i].dens; // # mass conservation
+        overburden = overburden + grid[i].mass;
+    }
+        
+}
+ 
 void IceCoreSite::heatDiffusion(long dt) {
     /* Uses forward Euler method for diffusion equation*/ 
     double T_new[gridsize()];

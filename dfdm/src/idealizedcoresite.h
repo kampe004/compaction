@@ -9,7 +9,7 @@ class IdealizedCoreSite: public IceCoreSite {
     /// core with idealized meteorological forcing
 
 public:
-    IdealizedCoreSite(Settings& settings) : IceCoreSite(settings) {};
+    IdealizedCoreSite(Settings& settings);
     std::string toString();
 
 protected:
@@ -22,10 +22,6 @@ protected:
 
 private:
     typedef IceCoreSite super;
-
-    const double acc=34.; // #Average Anual accumulation (mm/yr)
-    const double v_10m=9.; //   ;#10m windspeed (m/s)
-    const double Tsmean = 273.15 - 53; //  # annual mean surface temperature (K)
 };
 
 }
