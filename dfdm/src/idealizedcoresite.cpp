@@ -49,8 +49,8 @@ double IdealizedCoreSite::surfaceDensity(long time) {
     Surface density after Helsen (2008) 
     time in seconds since start of the simulations
     */
-    //return -151.94+1.4266*(73.6+1.06*settings.T_mean+0.0669*settings.acc_mean+4.77*settings.v10m_mean);
-    return settings.rho_s;
+    return -154.91+1.4266*(73.6+1.06*settings.T_mean+0.0669*settings.acc_mean+4.77*settings.v10m_mean);
+    //return settings.rho_s;
 }
 
 double IdealizedCoreSite::surfaceTemperature(long time) {
