@@ -11,7 +11,7 @@ Compile the firn model:
 
     mkdir dfdm/build
     cd dfdm/build
-    cmake -D CMAKE_CXX_COMPILER=g++ -D CMAKE_CXX_FLAGS=-fPIC ..
+    cmake -D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++ -D CMAKE_CXX_FLAGS=-fPIC ..
     make -j
 
 ## Running the model ##
