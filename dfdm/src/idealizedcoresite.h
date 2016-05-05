@@ -6,22 +6,22 @@
 namespace Densification { 
 
 class IdealizedCoreSite: public IceCoreSite {
-    /// core with idealized meteorological forcing
+   /// core with idealized meteorological forcing
 
 public:
-    IdealizedCoreSite(Settings& settings);
-    std::string toString();
+   IdealizedCoreSite(Settings& settings);
+   std::string toString();
 
 protected:
-    double surfaceDensity(long time);
-    double surfaceTemperature(long time);
-    double accumulationRate(long time);
-    double annualIntegratedAccumulation();
-    double annualMeanSurfaceTemperature();
-//    double annualSurfaceDensity();
+   double surfaceDensity(long time);
+   double surfaceTemperature(long time);
+   double accumulationRate(long time);
+   double annualIntegratedAccumulation();
+   double annualMeanSurfaceTemperature();
+//   double annualSurfaceDensity();
 
 private:
-    typedef IceCoreSite super;
+   typedef IceCoreSite super;
 };
 
 }

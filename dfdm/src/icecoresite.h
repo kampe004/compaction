@@ -11,7 +11,7 @@ namespace Densification {
 
 struct Layer {
    double T;    // temperature [K]
-   double dens;  // density [kg/m3]
+   double dens; // density [kg/m3]
    double dz;   // thickness [m]
    double d;    // dendricity
    double s;    // sphericity

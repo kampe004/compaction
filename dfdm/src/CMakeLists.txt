@@ -1,5 +1,5 @@
 set(SOURCE
-    ${CMAKE_CURRENT_SOURCE_DIR}/densification.cpp 
+    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp 
     ${CMAKE_CURRENT_SOURCE_DIR}/idealizedcoresite.cpp 
     ${CMAKE_CURRENT_SOURCE_DIR}/netcdfcoresite.cpp 
     ${CMAKE_CURRENT_SOURCE_DIR}/icecoresite.cpp 
