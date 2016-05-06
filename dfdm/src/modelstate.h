@@ -1,11 +1,13 @@
-#ifndef ICECORESITE_H
-#define ICECORESITE_H
+#ifndef MODELSTATE_H
+#define MODELSTATE_H
 
 #include <string>
 #include <vector>
 #include <algorithm>
 #include "constants.h"
 #include "settings.h"
+#include "meteo.h"
+#include "fsd.h"
 
 namespace DSM{ 
 
@@ -18,12 +20,12 @@ struct Layer {
    double gs;   // grain size [mm]
 };
 
-class IceCoreSite {
+class ModelState {
    /// abstract base class for all ice core classes
 
 public:
-   IceCoreSite(Settings& settings);
-   ~IceCoreSite() {}; 
+   ModelState(Settings& settings);
+   ~ModelState() {}; 
 
    void init();
    void runTimeStep(long dt);
@@ -64,11 +66,6 @@ public:
 protected:
    Settings settings;
 
-   // mean annual statistics for use in Helsen2008
-   double acc_ann_mean;
-   double w10m_ann_mean;
-   double Ts_ann_mean;
-
    void accumulate(long dt);
    void compact(long dt);
    void compactLigtenberg2011(long dt);
@@ -91,6 +88,7 @@ protected:
 
 private:
    bool is_initialized = false;
+
    const double ref_height = 0.4; //  		# reference height of layer in meters
    const double dzmax = 2*ref_height; //  # maximum thickness of layer
    const double dzmin = 0.8*ref_height; // # minimum thickness of layer

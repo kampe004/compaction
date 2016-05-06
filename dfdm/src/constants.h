@@ -1,7 +1,9 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-namespace Densification { 
+/* contains physical constants */
+
+namespace DSM{ 
 
 static const double rho_i=917.; // ice density [kg/m**3]
 static const double rho_w=1000.; // water density [kg/m**3]

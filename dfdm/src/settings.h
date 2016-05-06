@@ -1,7 +1,7 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
-namespace Densification{
+namespace DSM{
 
 enum class DensificationMethod {Ligtenberg2011, Anderson1976, Barnola1991, Spencer2001, BarnolaSpencer, HerronLangway};
 std::ostream& operator<<(std::ostream& os, DensificationMethod dm); // overload the '<<' operator for function toString()

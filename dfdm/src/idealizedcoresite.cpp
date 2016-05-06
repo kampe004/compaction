@@ -17,7 +17,7 @@
 #include "idealizedcoresite.h"
 #include "logging.h"
 
-namespace Densification{ 
+namespace DSM{ 
 
 IdealizedCoreSite::IdealizedCoreSite(Settings& settings) : IceCoreSite(settings) {
    /* we take all parameters from settings */

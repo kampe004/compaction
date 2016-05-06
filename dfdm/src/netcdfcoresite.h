@@ -4,40 +4,29 @@
 #include <vector>
 #include "icecoresite.h"
 
-namespace Densification { 
+namespace DSM{ 
 
 class NetcdfCoreSite: public IceCoreSite {
-    /// core with meteorological forcing from NetCDF files
+   /* meteorological forcing from NetCDF */
 
 public:
-    NetcdfCoreSite(Settings& settings);
-    std::string toString();
+   NetcdfCoreSite(Settings& settings);
+   std::string toString();
 
 protected:
-    double surfaceDensity(long time);
-    double surfaceTemperature(long time);
-    double accumulationRate(long time);
-    double annualIntegratedAccumulation();
-    double annualMeanSurfaceTemperature();
-//    double annualSurfaceDensity();
+   double surfaceTemperature(long time);
+   double accumulationRate(long time);
 
 private:
-    typedef IceCoreSite super;
+   typedef IceCoreSite super;
+   long forcing_dt; // sampling interval in seconds in forcing file
 
-    long forcing_dt; // sampling interval in seconds in forcing file
+   // raw data from NetCDF files
+   std::vector<double> acc_all;
+   std::vector<double> tskin_all;
+   std::vector<double> w10m_all;
 
-    // mean annual statistics for use in Helsen2008
-    double acc_ann_mean;
-    double w10m_ann_mean;
-    double Ts_ann_mean;
-
-    // raw data from NetCDF files
-    std::vector<double> acc_all;
-    std::vector<double> tskin_all;
-    std::vector<double> w10m_all;
-
-    void readForcing(Settings& settings);
-
+   void readForcing(Settings& settings);
 };
 }
 

@@ -25,7 +25,7 @@
 #include "logging.h"
 #include "netcdfcoresite.h"
 
-namespace Densification{ 
+namespace DSM{ 
 
 NetcdfCoreSite::NetcdfCoreSite(Settings& settings) : IceCoreSite(settings) {
    readForcing(settings);
@@ -93,12 +93,6 @@ void NetcdfCoreSite::readForcing(Settings& settings){
    logger << "INFO: mean annual Ts = " << Ts_ann_mean << std::endl;
 
    // TODO: do interpolation to finer timegrid here, in advance? 
-}
-
-double NetcdfCoreSite::surfaceDensity(long time) {
-   /* after Helsen (2008) */
-   return -154.91+1.4266*(73.6+1.06*Ts_ann_mean+0.0669*acc_ann_mean+4.77*w10m_ann_mean);
-   //return settings.rho_s;
 }
 
 double NetcdfCoreSite::surfaceTemperature(long time) {

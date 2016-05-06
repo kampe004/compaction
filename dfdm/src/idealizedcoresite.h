@@ -3,7 +3,7 @@
 
 #include "icecoresite.h"
 
-namespace Densification { 
+namespace DSM{ 
 
 class IdealizedCoreSite: public IceCoreSite {
    /// core with idealized meteorological forcing
@@ -13,7 +13,6 @@ public:
    std::string toString();
 
 protected:
-   double surfaceDensity(long time);
    double surfaceTemperature(long time);
    double accumulationRate(long time);
    double annualIntegratedAccumulation();
