@@ -1,3 +1,4 @@
+#include <cmath>
 
 #include "constants.h"
 #include "config.h"

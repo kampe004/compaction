@@ -1,14 +1,17 @@
 
+#include <cmath>
+
 #include "surfacedensity.h"
 #include "config.h"
 #include "meteo.h"
 #include "logging.h"
+#include "constants.h"
 
 namespace DSM{ 
 
 std::unique_ptr<SurfaceDensity> instantiate_surfacedensity(Meteo& meteo){
    const char * option_name = "fresh_snow_density:which_fsd";
-   int which_fsd = config.getInt(option_name, false, 0, 1, 1);
+   int which_fsd = config.getInt(option_name, false, 0, 3, 1);
 
    switch (which_fsd) {
       case 0   : return { std::make_unique<SurfaceDensityConstant>(meteo) };
@@ -48,14 +51,18 @@ double SurfaceDensityLenaerts2012::density() {
       formula 11
       The multiple linear regression that relates fresh snow density to mean surface temperature (Tsfc,Acc) and 10 m wind speed (U10m,Acc) during accumulation
       */
-   double a = 97.5;
-   double b = 0.77; 
-   double c = 4.49;
+   static const double a = 97.5;
+   static const double b = 0.77; 
+   static const double c = 4.49;
    return a + b*_meteo.surfaceTemperature() + c*_meteo.surfaceWind();
 }
 
 double SurfaceDensityCROCUS::density() {
-   return 1.0;
+   static const double a = 109.;
+   static const double b = 6.;
+   static const double c = 26.;
+   const double rho =  a + b*(_meteo.surfaceTemperature()-T0) + c*sqrt(_meteo.surfaceWind());
+   return std::max(rho, 50.);
 }
 
 } // namespace
