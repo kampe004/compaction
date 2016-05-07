@@ -27,15 +27,11 @@ std::unique_ptr<Meteo> instantiate_meteo(DynamicModel& dm){
    }
 }
 
-
 /* class Meteo*/
-Meteo::Meteo(DynamicModel& dm) : _dm(dm) {
-   logger << "Meteo()" << std::endl;
-}
+Meteo::Meteo(DynamicModel& dm) : _dm(dm) { }
 
 /* class MeteoIdealized*/
 MeteoIdealized::MeteoIdealized(DynamicModel& dm) : Meteo(dm){
-   logger << "MeteoIdealized()" << std::endl;
    logger << "INFO: using idealized forcing" << std::endl;
 
    const char * option_name;
@@ -51,7 +47,6 @@ MeteoIdealized::MeteoIdealized(DynamicModel& dm) : Meteo(dm){
 
 /* class MeteoNetcdf */
 MeteoNetcdf::MeteoNetcdf(DynamicModel& dm) : Meteo(dm){
-   logger << "MeteoNetcdf()" << std::endl;
    logger << "INFO: using Netcdf forcing" << std::endl;
 
    const char * option_name = "forcing:netcdf_dt";
@@ -127,7 +122,7 @@ void MeteoNetcdf::readForcing(){
 
 
 double MeteoNetcdf::surfaceTemperature() {
-   /* return surface temperature for current time step
+   /* return surface temperature at current time step
       currently assumes that dt = dt_forcing (this checked in the constructor) 
       */
    long nt = _dm.getCurrentTimeStep();
@@ -137,13 +132,23 @@ double MeteoNetcdf::surfaceTemperature() {
 }
 
 double MeteoNetcdf::accumulationRate() {
-   /* return acccumulation rate for current time step
+   /* return acccumulation rate at current time step
       currently assumes that dt = dt_forcing (this checked in the constructor) 
       */
    long nt = _dm.getCurrentTimeStep();
    int idx = (int) nt;
    idx = idx % _acc_all.size();
    return _acc_all[idx] / _dt_forcing;
+}
+
+double MeteoNetcdf::surfaceWind(){
+   /* return wind speed at current time step
+      currently assumes that dt = dt_forcing (this checked in the constructor) 
+      */
+   long nt = _dm.getCurrentTimeStep();
+   int idx = (int) nt;
+   idx = idx % _w10m_all.size();
+   return _w10m_all[idx] / _dt_forcing;
 }
 
 } // namespace

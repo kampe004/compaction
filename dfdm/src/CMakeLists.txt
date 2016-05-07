@@ -1,8 +1,11 @@
 set(SOURCE
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp 
-    ${CMAKE_CURRENT_SOURCE_DIR}/idealizedcoresite.cpp 
-    ${CMAKE_CURRENT_SOURCE_DIR}/netcdfcoresite.cpp 
-    ${CMAKE_CURRENT_SOURCE_DIR}/icecoresite.cpp 
+    ${CMAKE_CURRENT_SOURCE_DIR}/config.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/dynamicmodel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/meteo.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modelstate.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/surfacedensity.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/dictionary.c 
     ${CMAKE_CURRENT_SOURCE_DIR}/iniparser.c 
     PARENT_SCOPE

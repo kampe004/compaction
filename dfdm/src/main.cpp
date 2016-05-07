@@ -19,7 +19,7 @@
 namespace DSM{
 /* globally unique instances */
 std::ostream logger(NULL); 
-Config config;
+ConfigParser config;
 } // namespace
 
 using namespace DSM; 

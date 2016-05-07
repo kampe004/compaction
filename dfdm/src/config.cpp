@@ -7,16 +7,16 @@
 
 namespace DSM{ 
 
-Config::Config(){
+ConfigParser::ConfigParser(){
    _dict = iniparser_load(config_name);
 }
 
-Config::~Config(){
+ConfigParser::~ConfigParser(){
    iniparser_freedict(_dict);
 }
 
-int Config::getInt(const char* name, bool required, int minval, int maxval, int defval){
-   const char * rtnnam = "Config::getInt()";
+int ConfigParser::getInt(const char* name, bool required, int minval, int maxval, int defval){
+   const char * rtnnam = "ConfigParser::getInt()";
    int tmp;
    if (required){
       int missval = -9999;
@@ -37,8 +37,8 @@ int Config::getInt(const char* name, bool required, int minval, int maxval, int 
    return tmp;
 }
 
-double Config::getDouble(const char* name, bool required, double minval, double maxval, double defval){
-   const char * rtnnam = "Config::getDouble()";
+double ConfigParser::getDouble(const char* name, bool required, double minval, double maxval, double defval){
+   const char * rtnnam = "ConfigParser::getDouble()";
    double tmp;
    if (required){
       double missval = -9999.;
@@ -59,8 +59,8 @@ double Config::getDouble(const char* name, bool required, double minval, double 
    return tmp;
 }
 
-std::string Config::getFilename(const char* name, bool required, bool check_existence, const char* defval ){
-   const char * rtnnam = "Config::getFileName()";
+std::string ConfigParser::getFilename(const char* name, bool required, bool check_existence, const char* defval ){
+   const char * rtnnam = "ConfigParser::getFileName()";
    const char * tmp;
    if (required){
       tmp = iniparser_getstring(_dict, name, "NONE");

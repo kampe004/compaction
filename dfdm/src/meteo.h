@@ -8,8 +8,8 @@
 
 namespace DSM{ 
 
-class DynamicModel;
 class Meteo;
+class DynamicModel;
 std::unique_ptr<Meteo> instantiate_meteo(DynamicModel& dm); // based on the INI file, instantiate the appropriate Meteo-subtype
 
 class Meteo{
@@ -18,12 +18,16 @@ class Meteo{
  public: 
    Meteo(DynamicModel& dm);
    ~Meteo() {}; 
-   virtual double surfaceTemperature() =0;
-   virtual double accumulationRate() =0;
+
+   void updateAnnualStatistics();
+
    double annualAcc() { /* annually integrated accumulation */ return _acc_ann_mean; }
    double annualTskin() { /* annual average surface temperature */ return _Ts_ann_mean; }
    double annualW10m() { /* annual average wind speed */ return _w10m_ann_mean; }
-   void updateAnnualStatistics();
+
+   virtual double surfaceTemperature() =0;
+   virtual double accumulationRate() =0;
+   virtual double surfaceWind() =0;
 
  protected:
    DynamicModel& _dm; // reference to the host model
@@ -41,6 +45,7 @@ class MeteoIdealized : public Meteo{
    ~MeteoIdealized() {}; 
    double surfaceTemperature() { return _ideal_T_mean; }
    double accumulationRate() { return _ideal_acc / sec_in_year; }
+   double surfaceWind() { return _ideal_w10m; }
  private:
    double _ideal_T_mean;
    double _ideal_T_amp;
@@ -55,6 +60,7 @@ class MeteoNetcdf : public Meteo{
    ~MeteoNetcdf() {}; 
    double surfaceTemperature();
    double accumulationRate();
+   double surfaceWind();
 
  private:
    // raw data from NetCDF files
