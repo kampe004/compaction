@@ -41,7 +41,14 @@ double SurfaceDensityHelsen2008::density() {
 }
 
 double SurfaceDensityLenaerts2012::density() {
-   return 1.0;
+   /* Lenaerts et al. 2012 
+      formula 11
+      The multiple linear regression that relates fresh snow density to mean surface temperature (Tsfc,Acc) and 10 m wind speed (U10m,Acc) during accumulation
+      */
+   double a = 97.5;
+   double b = 0.77; 
+   double c = 4.49;
+   return a + b*_meteo.surfaceTemperature() + c*_meteo.surfaceWind();
 }
 
 double SurfaceDensityCROCUS::density() {

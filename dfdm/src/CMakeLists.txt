@@ -5,6 +5,7 @@ set(SOURCE
     ${CMAKE_CURRENT_SOURCE_DIR}/meteo.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modelstate.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/surfacedensity.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/metamorphism.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/dictionary.c 
     ${CMAKE_CURRENT_SOURCE_DIR}/iniparser.c 
