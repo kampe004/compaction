@@ -23,7 +23,10 @@ std::unique_ptr<SurfaceDensity> instantiate_surfacedensity(Meteo& meteo){
 
 SurfaceDensity::SurfaceDensity(Meteo& meteo) : _meteo(meteo) { } 
 
-SurfaceDensityConstant::SurfaceDensityConstant(Meteo& meteo) : SurfaceDensity(meteo) { } 
+SurfaceDensityConstant::SurfaceDensityConstant(Meteo& meteo) : SurfaceDensity(meteo) { 
+   const char * option_name = "fresh_snow_density:density";
+   _val = config.getDouble(option_name, true, 1., 1000., -1.);
+} 
 
 SurfaceDensityHelsen2008::SurfaceDensityHelsen2008(Meteo& meteo) : SurfaceDensity(meteo) { }
 

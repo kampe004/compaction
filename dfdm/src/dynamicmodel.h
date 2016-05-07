@@ -5,6 +5,7 @@ namespace DSM{
 
 class ModelState;
 class Metamorphism;
+class Compaction;
 
 class DynamicModel{
  public:
@@ -18,7 +19,7 @@ class DynamicModel{
 
    // methods
    void run();
-   void runTimeStep(ModelState& mstate, Metamorphism& mm);
+   void runTimeStep(ModelState& mstate, Metamorphism& mm, Compaction& comp);
    void accumulate(ModelState& mstate);
    void doGridChecks(ModelState& mstate);
    void heatDiffusion(ModelState& mstate);

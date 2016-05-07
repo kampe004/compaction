@@ -23,11 +23,8 @@ std::unique_ptr<Metamorphism> instantiate_metamorphism(ModelState& mstate, Dynam
 }
 
 Metamorphism::Metamorphism(ModelState& mstate, DynamicModel& dm) : _mstate(mstate), _dm(dm) { } 
-
 MetamorphismNone::MetamorphismNone(ModelState& mstate, DynamicModel& dm) : Metamorphism(mstate, dm) { } 
-
 MetamorphismAnderson1976::MetamorphismAnderson1976(ModelState& mstate, DynamicModel& dm) : Metamorphism(mstate, dm) { } 
-
 MetamorphismCROCUS::MetamorphismCROCUS(ModelState& mstate, DynamicModel& dm) : Metamorphism(mstate, dm) { } 
 
 void MetamorphismNone::metamorphism() { 

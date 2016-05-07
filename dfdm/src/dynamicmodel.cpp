@@ -11,6 +11,7 @@
 #include "meteo.h"
 #include "surfacedensity.h"
 #include "metamorphism.h"
+#include "compaction.h"
 
 namespace DSM{ 
 
@@ -70,9 +71,9 @@ void DynamicModel::run(){
    /* setup submodels */
    std::unique_ptr<Meteo> meteo = instantiate_meteo(*this);
    std::unique_ptr<SurfaceDensity> surf = instantiate_surfacedensity(*meteo);
-   //std::unique_ptr<CompactionParam> compact;
    ModelState mstate(*meteo, *surf, *this);
    std::unique_ptr<Metamorphism> mm = instantiate_metamorphism(mstate, *this);
+   std::unique_ptr<Compaction> comp = instantiate_compaction(mstate, *this);
    
    /* print some meteo statistics */
    logger << "INFO: initial surface temperature is: " << meteo->surfaceTemperature() << std::endl;
@@ -89,7 +90,7 @@ void DynamicModel::run(){
 
       start = clock();
       for(int tstep = 0; tstep < dt_per_year; tstep++) {
-         runTimeStep(mstate, *mm);
+         runTimeStep(mstate, *mm, *comp);
       }
       double elapsed = ((double)(clock() - start)) / CLOCKS_PER_SEC;
 
@@ -105,10 +106,10 @@ void DynamicModel::run(){
    mstate.writeModelState();
 }
 
-void DynamicModel::runTimeStep(ModelState& mstate, Metamorphism& mm) {
+void DynamicModel::runTimeStep(ModelState& mstate, Metamorphism& mm, Compaction& comp) {
    accumulate(mstate);
    mm.metamorphism();
-   //compact();
+   comp.compaction();
    doGridChecks(mstate);
 
    if (_has_heat && mstate.gridsize() > 1)
