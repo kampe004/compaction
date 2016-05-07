@@ -10,6 +10,7 @@
 #include "logging.h"
 #include "meteo.h"
 #include "surfacedensity.h"
+#include "metamorphism.h"
 
 namespace DSM{ 
 
@@ -70,8 +71,8 @@ void DynamicModel::run(){
    std::unique_ptr<Meteo> meteo = instantiate_meteo(*this);
    std::unique_ptr<SurfaceDensity> surf = instantiate_surfacedensity(*meteo);
    //std::unique_ptr<CompactionParam> compact;
-   //std::unique_ptr<MetamorphismParam> metamorph;
    ModelState mstate(*meteo, *surf, *this);
+   std::unique_ptr<Metamorphism> mm = instantiate_metamorphism(mstate, *this);
    
    /* print some meteo statistics */
    logger << "INFO: initial surface temperature is: " << meteo->surfaceTemperature() << std::endl;
@@ -88,7 +89,7 @@ void DynamicModel::run(){
 
       start = clock();
       for(int tstep = 0; tstep < dt_per_year; tstep++) {
-         runTimeStep(mstate);
+         runTimeStep(mstate, *mm);
       }
       double elapsed = ((double)(clock() - start)) / CLOCKS_PER_SEC;
 
@@ -104,8 +105,9 @@ void DynamicModel::run(){
    mstate.writeModelState();
 }
 
-void DynamicModel::runTimeStep(ModelState& mstate) {
+void DynamicModel::runTimeStep(ModelState& mstate, Metamorphism& mm) {
    accumulate(mstate);
+   mm.metamorphism();
    //compact();
    doGridChecks(mstate);
 

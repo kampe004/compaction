@@ -1,15 +1,3 @@
-/* --------------------------------------------------------------------------------
-
-   DESCRIPTION
-     Abstract base class for ice core classes
-   
-   DATE
-     15-JAN-2016
-   
-   AUTHOR
-     L.vankampenhout@uu.nl
-   -------------------------------------------------------------------------------- */
-
 #include <iostream>
 #include <fstream>
 #include <sstream>
