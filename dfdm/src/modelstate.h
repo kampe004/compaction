@@ -25,7 +25,7 @@ struct Layer {
    this means the newest layer has the highest index and the deepest layer has index 0 */
 typedef std::vector<Layer> Grid;
 
-const double ref_height = 0.1;            // reference height of layer in meters
+const double ref_height = 0.2;            // reference height of layer in meters
 const double dzmax = 2*ref_height;        // maximum thickness of layer
 const double dzmin = 0.8*ref_height;      // minimum thickness of layer
 const unsigned int initial_layers = 1;

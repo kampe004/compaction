@@ -113,7 +113,7 @@ void DynamicModel::runTimeStep(ModelState& mstate, Metamorphism& mm, Compaction&
    doGridChecks(mstate);
 
    if (_has_heat && mstate.gridsize() > 1)
-      heatDiffusion(mstate);
+      heatDiffusionShallow(mstate);
 
    _nt++;
 }
@@ -186,6 +186,11 @@ void DynamicModel::heatDiffusion(ModelState& mstate) {
    for (int i = 0; i < mstate.gridsize(); i++) {
       tc = tcair + (7.75e-5*grid[i].dens + 1.105e-6*pow(grid[i].dens,2))*(tcice - tcair); // thermal conductivity [W/m/K]
       td[i] = tc/(grid[i].dens * cp); // thermal diffusivity [m2/s]
+
+      double stab_crit = td[i] * _dt / pow(grid[i].dz,2);
+      if (stab_crit > 0.5) {
+          logger << "WARNING: stability criterium r < 0.5 violated, r = " << stab_crit << std::endl;
+      }
    }
 
    /* TOP: Dirichlet b.c. */
@@ -198,9 +203,53 @@ void DynamicModel::heatDiffusion(ModelState& mstate) {
       T_new[i] = td[i]*_dt/pow(grid[i].dz,2)*(grid[i-1].T - 2 * grid[i].T + grid[i+1].T) + grid[i].T; // # Forward in Time Centered in Space
    }
 
-   /* Update temperatures */
+   /* Update temperature */
    for (int i = 0; i < Np; i++) {
       grid[i].T = T_new[i];
+   }
+}
+
+void DynamicModel::heatDiffusionShallow(ModelState& mstate) {
+   /* Uses forward Euler method for diffusion equation
+      only solves for the shallow part (top 10 metres) 
+      assume constant temperature below */ 
+   static const double solve_lim = 10.0;
+
+   Grid& grid = mstate.getGrid();
+   int Np = mstate.gridsize();
+   double tc;
+   double td;
+   double T_new[Np];
+
+   /* TOP: Dirichlet b.c. */
+   T_new[Np-1] = mstate.getMeteo().surfaceTemperature(); // top boundary equal to surface temperature
+   double total_depth = grid[Np-1].dz;
+
+   int i;
+   for (i = Np-2; i > 0; i--) {
+      tc = tcair + (7.75e-5*grid[i].dens + 1.105e-6*pow(grid[i].dens,2))*(tcice - tcair); // thermal conductivity [W/m/K]
+      td = tc/(grid[i].dens * cp); // thermal diffusivity [m2/s]
+
+      double stab_crit = td * _dt / pow(grid[i].dz,2);
+      if (stab_crit > 0.5) {
+          logger << "WARNING: stability criterium r < 0.5 violated, r = " << stab_crit << std::endl;
+      }
+      T_new[i] = td*_dt/pow(grid[i].dz,2)*(grid[i-1].T - 2 * grid[i].T + grid[i+1].T) + grid[i].T; // # Forward in Time Centered in Space
+
+      total_depth += grid[i].dz;
+      if (total_depth > solve_lim) {
+         break;
+      }
+   }
+
+   if (i == 0) {
+      /* BOTTOM: Neumann b.c. */
+      T_new[0] = td*_dt/grid[0].dz * (grid[1].T-grid[0].T) + grid[0].T;
+   }
+
+   /* Update temperature */
+   for (int k = i; k < Np; k++) {
+      grid[k].T = T_new[k];
    }
 }
 

@@ -51,10 +51,10 @@ MeteoNetcdf::MeteoNetcdf(DynamicModel& dm) : Meteo(dm){
 
    const char * option_name = "forcing:netcdf_dt";
    _dt_forcing = config.getInt(option_name, true, 0, (int)1e9, 0);
-   if (_dm.getDt() != _dt_forcing) {
-      logger << "ERROR: " << option_name << " [ " << _dt_forcing << " ] must equal model dt [ " << _dm.getDt() << " ]" << std::endl;
-      std::abort();
-   }
+   //if (_dm.getDt() != _dt_forcing) {
+   //   logger << "ERROR: " << option_name << " [ " << _dt_forcing << " ] must equal model dt [ " << _dm.getDt() << " ]" << std::endl;
+   //   std::abort();
+   //}
    logger << "INFO: " << option_name << " = " << _dt_forcing << std::endl;
    readForcing();
 }
@@ -126,7 +126,8 @@ double MeteoNetcdf::surfaceTemperature() {
       currently assumes that dt = dt_forcing (this checked in the constructor) 
       */
    long nt = _dm.getCurrentTimeStep();
-   int idx = (int) nt; // index in forcing array
+   long dt_model = _dm.getDt();
+   int idx = (int) (nt * dt_model / _dt_forcing); // index in forcing array
    idx = idx % _tskin_all.size();
    return _tskin_all[idx];
 }

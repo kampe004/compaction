@@ -19,15 +19,17 @@ class DynamicModel{
 
    // methods
    void run();
-   void runTimeStep(ModelState& mstate, Metamorphism& mm, Compaction& comp);
-   void accumulate(ModelState& mstate);
-   void doGridChecks(ModelState& mstate);
-   void heatDiffusion(ModelState& mstate);
 
  private:
    long _nt;   // number of timesteps since start of simulation
    long _dt;   // simulation timestep [s]
    bool _has_heat; // heat diffusion
+
+   void runTimeStep(ModelState& mstate, Metamorphism& mm, Compaction& comp);
+   void accumulate(ModelState& mstate);
+   void doGridChecks(ModelState& mstate);
+   void heatDiffusion(ModelState& mstate);
+   void heatDiffusionShallow(ModelState& mstate);
 };
 
 } // namespace
