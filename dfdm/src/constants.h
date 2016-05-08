@@ -15,6 +15,11 @@ static const double tcice = 2.290; // ice thermal conductivity [W/m/K]
 static const double cp = 2000.0; // specific heat capacity of ice [J/kg/K] http://www.engineeringtoolbox.com/ice-thermal-properties-d_576.html
 
 static const long sec_in_year=365*24*3600; // amount of seconds in a year
+static const long sec_in_day=24*3600; // amount of seconds in a day
+
+static const double fs_dend = 1.0; // fresh snow dendricity 
+static const double fs_sphere = 0.5; // fresh snow sphericity
+static const double fs_gs   = 0.35; // Brun 1992: when dendricity reaches 0, grain size ranges 0.3-0.4 mm
 
 }
 

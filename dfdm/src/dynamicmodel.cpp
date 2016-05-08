@@ -124,20 +124,15 @@ void DynamicModel::doGridChecks(ModelState& mstate){
    /* check minimum thickness, start with second layer (index N-2) */
    Grid& grid = mstate.getGrid();
    int i = grid.size()-2;
-   double combined_mass;
    while (i >= 0 ) { // Use while instead of for-loop as size may change during loop
       if (grid[i].dz < dzmin && mstate.gridsize() > 1){
          // Layer is too thin, combine with neighbor
          if (i == 0  || grid[i-1].dz > grid[i+1].dz  ) {
             /* CASE 1: Bottom layer can only be combined with the one above */
             /* CASE 2: Determine smallest neighbour */
-            combined_mass = grid[i+1].dens * grid[i+1].dz + grid[i].dens * grid[i].dz;
-            grid[i+1].dz   = grid[i+1].dz + grid[i].dz;
-            grid[i+1].dens  = combined_mass / grid[i+1].dz;
+            mstate.combineLayers(grid[i+1], grid[i]);
          } else {
-            combined_mass = grid[i-1].dens * grid[i-1].dz + grid[i].dens * grid[i].dz;
-            grid[i-1].dz   = grid[i-1].dz + grid[i].dz;
-            grid[i-1].dens  = combined_mass / grid[i-1].dz;
+            mstate.combineLayers(grid[i-1], grid[i]);
          }
          grid.erase(grid.begin() + i); // NOTE: this is very inefficient
       }
@@ -160,15 +155,24 @@ void DynamicModel::accumulate(ModelState& mstate) {
    const double acc = mstate.getMeteo().accumulationRate() * 1e-3 * _dt; // convert from [mm/s] to [m]
    const double dz = (rho_w/dens) * acc;
 
-   Layer& top = grid.back();  // top layer
+   Layer& top = grid.back();
+
+   // grain parameters are mass weighted
+   const double U = mstate.getMeteo().surfaceWind();
+   const double dfall = std::min(std::max(1.29-0.17*U, 0.20), 1.);
+   const double sfall = std::min(std::max(0.08*U + 0.38, 0.5), 0.9);
+   const double new_snow = dz*dens;
+   const double old_snow = top.dz*top.dz;
+   top.d    = (top.d*old_snow + dfall*new_snow)/(new_snow+old_snow);
+   top.s    = (top.s*old_snow + sfall*new_snow)/(new_snow+old_snow);
+   top.gs   = (top.gs*old_snow + fs_gs*new_snow)/(new_snow+old_snow);
+
    top.dens = top.dz/(top.dz+dz)*top.dens + dz/(top.dz+dz)*dens;
    top.dz = top.dz + dz;
 
    if (top.dz > dzmax ) {
       // Split in unequal parts 4:1
-      Layer layer;
-      layer.dens  = top.dens;
-      layer.T     = top.T;
+      Layer layer = top;
       layer.dz    = top.dz/5.;
       top.dz      = top.dz * 4./5; 
       grid.push_back(layer);

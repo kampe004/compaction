@@ -15,9 +15,9 @@ struct Layer {
    double T;    // temperature [K]
    double dens; // density [kg/m3]
    double dz;   // thickness [m]
-   //double d;    // dendricity
-   //double s;    // sphericity
-   //double gs;   // grain size [mm]
+   double d;    // dendricity [-]
+   double s;    // sphericity [-]
+   double gs;   // grain size [mm]
 };
 
 /* We chose the data structure to be std::vector.
@@ -38,6 +38,7 @@ class ModelState {
 
    void writeModelState();
    void printSummary();
+   void combineLayers(Layer& lay1, Layer& lay2);
 
    bool hasReachedDensity(const double dens);
 

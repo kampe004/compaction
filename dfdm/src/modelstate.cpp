@@ -7,6 +7,7 @@
 #include "dynamicmodel.h"
 #include "modelstate.h"
 #include "meteo.h"
+#include "constants.h"
 #include "surfacedensity.h"
 
 namespace DSM{ 
@@ -15,8 +16,11 @@ ModelState::ModelState(Meteo& meteo, SurfaceDensity& surf, DynamicModel& dm) : _
    // initialize grid with a very tiny top layer
    Layer layer;
    layer.T      = _meteo.surfaceTemperature();
-   //layer.dens   = _dm.meteo->surfaceDensity();
+   layer.dens   = 200.;
    layer.dz     = 0.00001;
+   layer.d      = fs_dend;
+   layer.s      = fs_sphere;
+   layer.gs     = fs_gs;
    _grid.push_back(layer);
 }
 
@@ -124,6 +128,17 @@ double ModelState::maxDens() {
      retval = std::max(retval,_grid[i].dens);
    }
    return retval;
+}
+
+void ModelState::combineLayers(Layer& lay1, Layer& lay2) {
+   /* the resulting layer is stored in 'a' */
+   const double m1 = lay1.dz * lay1.dens;
+   const double m2 = lay2.dz * lay2.dens;
+   lay1.d   = (lay1.d * m1 + lay2.d * m2)/(m1+m2);
+   lay1.s   = (lay1.s * m1 + lay2.s * m2)/(m1+m2);
+   lay1.gs  = (lay1.gs* m1 + lay2.gs* m2)/(m1+m2);
+   lay1.dz  = lay1.dz + lay2.dz;
+   lay1.dens = (m1+m2)/lay1.dz;
 }
 
 } // namespace
