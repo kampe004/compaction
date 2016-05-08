@@ -6,7 +6,7 @@
 
 namespace DSM{ 
 
-static const char config_name[] = "settings.ini";
+//static const char config_name[] = "settings.ini";
 class ConfigParser; 
 extern ConfigParser config; // globally unique config file
 
@@ -17,6 +17,7 @@ class ConfigParser{
    ConfigParser();
    ~ConfigParser();
 
+   void init(const char* config_name);
    int getInt(const char* name, bool required, int minval, int maxval, int defval);
    double getDouble(const char* name, bool required, double minval, double maxval, double defval);
    std::string getFilename(const char* name, bool required, bool check_existence, const char* defval);

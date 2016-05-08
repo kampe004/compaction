@@ -7,12 +7,14 @@
 
 namespace DSM{ 
 
-ConfigParser::ConfigParser(){
-   _dict = iniparser_load(config_name);
-}
+ConfigParser::ConfigParser(){ }
 
 ConfigParser::~ConfigParser(){
    iniparser_freedict(_dict);
+}
+
+void ConfigParser::init(const char* config_name){
+   _dict = iniparser_load(config_name);
 }
 
 int ConfigParser::getInt(const char* name, bool required, int minval, int maxval, int defval){
