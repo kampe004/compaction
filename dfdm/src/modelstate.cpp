@@ -20,7 +20,7 @@ ModelState::ModelState(Meteo& meteo, SurfaceDensity& surf, DynamicModel& dm) : _
    _grid.push_back(layer);
 }
 
-double ModelState::getDepthOfDensity(double dens) {
+double ModelState::getDepthOfDensity(const double dens) {
    double diffi, diffip1;
    double dzi, dzip1;
    int tidx = gridsize()-1; // index of top layer
@@ -42,7 +42,7 @@ double ModelState::getDepthOfDensity(double dens) {
    return -1.0; // dens not found
 }
 
-bool ModelState::hasReachedDensity(double dens){
+bool ModelState::hasReachedDensity(const double dens){
    return this->getDepthOfDensity(dens) > 0.; 
 }
 
@@ -85,8 +85,9 @@ void ModelState::writeModelState() {
    std::ofstream f_layers;
    f_layers.open("layers.csv");
    f_layers << gridsize() << std::endl;
+   f_layers << "dz[m] \tmass[kg] \tdens[kg/m] \tT[K]" << std::endl;
    for (int i = gridsize()-1; i >= 0; i--) {
-      f_layers << _grid[i].dz << "," << _grid[i].dz * _grid[i].dens<< "," << _grid[i].dens << "," << _grid[i].T << std::endl;
+      f_layers << _grid[i].dz << "\t" << _grid[i].dz * _grid[i].dens<< "\t" << _grid[i].dens << "\t" << _grid[i].T << std::endl;
    }
    f_layers.close();
 

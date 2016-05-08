@@ -20,6 +20,12 @@ class Compaction{
    DynamicModel& _dm;
 };
 
+class CompactionNone : public Compaction{
+ public:
+   CompactionNone(ModelState& mstate, DynamicModel& dm);
+   void compaction() {};
+};
+
 class CompactionHerronLangway : public Compaction{
  public:
    CompactionHerronLangway(ModelState& mstate, DynamicModel& dm);

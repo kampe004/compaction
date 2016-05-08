@@ -12,32 +12,52 @@ namespace DSM{
 
 std::unique_ptr<Compaction> instantiate_compaction(ModelState& mstate, DynamicModel& dm){
    const char * option_name = "physics:which_compaction";
-   int which_compaction = config.getInt(option_name, false, 0, 4, 0);
+   int which_compaction = config.getInt(option_name, false, 0, 5, 1);
 
    switch (which_compaction) {
-      case 0   : return { std::make_unique<CompactionHerronLangway>(mstate, dm) };
-      case 1   : return { std::make_unique<CompactionAnderson>(mstate, dm) };
-      case 2   : return { std::make_unique<CompactionBarnolaPimienta>(mstate, dm) };
-      case 3   : return { std::make_unique<CompactionLigtenberg>(mstate, dm) };
-      case 4   : return { std::make_unique<CompactionCROCUS>(mstate, dm) };
+      case 0   : return { std::make_unique<CompactionNone>(mstate, dm) };
+      case 1   : return { std::make_unique<CompactionHerronLangway>(mstate, dm) };
+      case 2   : return { std::make_unique<CompactionAnderson>(mstate, dm) };
+      case 3   : return { std::make_unique<CompactionBarnolaPimienta>(mstate, dm) };
+      case 4   : return { std::make_unique<CompactionLigtenberg>(mstate, dm) };
+      case 5   : return { std::make_unique<CompactionCROCUS>(mstate, dm) };
       default:
          logger << "ERROR: unknown value: " << which_compaction << " for config option " << option_name << std::endl;
          std::abort();
    }
 }
 
-Compaction::Compaction(ModelState& mstate, DynamicModel& dm) : _mstate(mstate), _dm(dm) { } 
-CompactionHerronLangway::CompactionHerronLangway(ModelState& mstate, DynamicModel& dm) : Compaction(mstate, dm) { } 
-CompactionAnderson::CompactionAnderson(ModelState& mstate, DynamicModel& dm) : Compaction(mstate, dm) { } 
-CompactionBarnolaPimienta::CompactionBarnolaPimienta(ModelState& mstate, DynamicModel& dm) : Compaction(mstate, dm) { } 
-CompactionLigtenberg::CompactionLigtenberg(ModelState& mstate, DynamicModel& dm) : Compaction(mstate, dm) { } 
-CompactionCROCUS::CompactionCROCUS(ModelState& mstate, DynamicModel& dm) : Compaction(mstate, dm) { } 
+Compaction::Compaction(ModelState& mstate, DynamicModel& dm) : _mstate(mstate), _dm(dm) { }
+
+CompactionNone::CompactionNone(ModelState& mstate, DynamicModel& dm) : Compaction(mstate, dm) {
+   logger << "CompactionNone()" << std::endl; 
+}
+
+CompactionHerronLangway::CompactionHerronLangway(ModelState& mstate, DynamicModel& dm) : Compaction(mstate, dm) {
+   logger << "CompactionHerronLangway()" << std::endl; 
+}
+
+CompactionAnderson::CompactionAnderson(ModelState& mstate, DynamicModel& dm) : Compaction(mstate, dm) { 
+   logger << "CompactionAnderson()" << std::endl; 
+}
+
+CompactionBarnolaPimienta::CompactionBarnolaPimienta(ModelState& mstate, DynamicModel& dm) : Compaction(mstate, dm) { 
+   logger << "CompactionBarnolaPimienta()" << std::endl; 
+}
+
+CompactionLigtenberg::CompactionLigtenberg(ModelState& mstate, DynamicModel& dm) : Compaction(mstate, dm) { 
+   logger << "CompactionLigtenberg()" << std::endl; 
+}
+
+CompactionCROCUS::CompactionCROCUS(ModelState& mstate, DynamicModel& dm) : Compaction(mstate, dm) { 
+   logger << "CompactionCROCUS()" << std::endl; 
+}
 
 void CompactionLigtenberg::compaction() {
    /*  Densification as equation [Ar10T] from Ligtenberg2011
       with additional scaling parameters MO for Antarctica */
    Grid& grid = _mstate.getGrid();
-   const double dt = _dm.getDt();
+   const double dt = (double)_dm.getDt();
    static const double E_c=60.e3; //#  (kJ/mol)
    static const double E_g=42.4e3; //# (kJ/mol)  
    const double acc_year = _mstate.getMeteo().annualAcc(); 
@@ -53,7 +73,7 @@ void CompactionLigtenberg::compaction() {
          MO =  2.366 - 0.293 * log(acc_year);
          C =  0.03;
       }
-      grid[i].dens = grid[i].dens + ((double)dt/sec_in_year)*MO*C*acc_year*g*(rho_i-grid[i].dens)*exp(-E_c/(R*grid[i].T)+E_g/(R*Tsmean));
+      grid[i].dens = grid[i].dens + (dt/sec_in_year)*MO*C*acc_year*g*(rho_i-grid[i].dens)*exp(-E_c/(R*grid[i].T)+E_g/(R*Tsmean));
       grid[i].dz = layer_mass/grid[i].dens; // mass conservation
    }
 }
@@ -62,7 +82,7 @@ void CompactionAnderson::compaction() {
    /* Compaction due to destructive metamorphism (Anderson 1976) and overburden (Anderson 1976)
       Formulas taken from CLM 4.5 Tech Note */
    Grid& grid = _mstate.getGrid();
-   const double dt = _dm.getDt();
+   const double dt = (double)_dm.getDt();
 
    static const double Tf = T0;
    static const double eta0 = 9e5;
@@ -87,34 +107,34 @@ void CompactionAnderson::compaction() {
 }
 
 void CompactionHerronLangway::compaction() {
-   /*  Densification as Herron & Langway 1980 
-      emperical model from the analysis of several Antarctic 
+   /* Densification as Herron & Langway 1980 
+      empirical model from the analysis of several Antarctic 
       and Greenland ice core density profiles  */
    Grid& grid = _mstate.getGrid();
    const double acc_year = _mstate.getMeteo().annualAcc(); 
-   const double dt = _dm.getDt();
+   const double dt = (double)_dm.getDt();
 
    double layer_mass;
    for (int i = grid.size()-1; i >= 0; i--) {
       layer_mass = grid[i].dz * grid[i].dens;
       if (grid[i].dens <= 550.){
          const double k0 = 11. * exp(-10160. / (R*grid[i].T));
-         grid[i].dens = grid[i].dens + ((double)dt/sec_in_year) * k0 * acc_year * 1e-3 * (rho_i - grid[i].dens);
+         grid[i].dens = grid[i].dens + (dt/(double)sec_in_year) * k0 * acc_year * 1e-3 * (rho_i - grid[i].dens);
       } else { 
          const double k1 = 575. * exp(-21400. / (R*grid[i].T));
-         grid[i].dens = grid[i].dens + ((double)dt/sec_in_year) * k1 * sqrt(acc_year*1e-3) * (rho_i - grid[i].dens);
+         grid[i].dens = grid[i].dens + (dt/(double)sec_in_year) * k1 * sqrt(acc_year*1e-3) * (rho_i - grid[i].dens);
       }
       grid[i].dz = layer_mass/grid[i].dens; // # mass conservation
    }
 }
 
 void CompactionBarnolaPimienta::compaction() {
-   /*  Densification as Barnola & Pimienta 1991 
+   /* Densification as Barnola & Pimienta 1991 
       From the surface to rho = 550 kg/m3 the Herron & Langway expression
       is used, below 550 the Pimienta expression.  */
    Grid& grid = _mstate.getGrid();
    const double acc_year = _mstate.getMeteo().annualAcc(); 
-   const double dt = _dm.getDt();
+   const double dt = (double)_dm.getDt();
 
    double overburden = 0;
    double layer_mass;
@@ -123,7 +143,7 @@ void CompactionBarnolaPimienta::compaction() {
       if (grid[i].dens <= 550.){
          // Herron & Langway
          const double k0 = 11. * exp(-10160./(R*grid[i].T));
-         grid[i].dens = grid[i].dens + ((double)dt/sec_in_year) * k0 * acc_year * 1e-3 * (rho_i - grid[i].dens);
+         grid[i].dens = grid[i].dens + (dt/sec_in_year) * k0 * acc_year * 1e-3 * (rho_i - grid[i].dens);
       } else { 
          // Barnola & Pimienta 1991
          static const double A0 = 2.54e4; // in the original paper: [2.54e4 MPa^-3 s-1] 
@@ -145,7 +165,7 @@ void CompactionBarnolaPimienta::compaction() {
          }
          const double P = (overburden + 0.5*layer_mass)*g*1e-6/1.0;  // 1 Pa = 1 kg / (m * s2). We have unit area, convert to MPa
          //P = P*rho_i/grid[i].dens; // convert to grain-load stress LvK
-         grid[i].dens = grid[i].dens + (double)dt * A0*exp(-Q/(R*grid[i].T)) * ff * pow(P,3.0) * grid[i].dens; 
+         grid[i].dens = grid[i].dens + dt * A0*exp(-Q/(R*grid[i].T)) * ff * pow(P,3.0) * grid[i].dens; 
       }
       grid[i].dz = layer_mass/grid[i].dens; // # mass conservation
       overburden = overburden + layer_mass;

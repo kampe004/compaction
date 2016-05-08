@@ -9,11 +9,11 @@
 namespace DSM{ 
 
 std::unique_ptr<Metamorphism> instantiate_metamorphism(ModelState& mstate, DynamicModel& dm){
-   const char * option_name = "fresh_snow_density:which_metamorphism";
+   const char * option_name = "physics:which_metamorphism";
    int which_metamorphism = config.getInt(option_name, false, 0, 2, 1);
 
    switch (which_metamorphism) {
-      case 0   : return { std::make_unique<MetamorphismAnderson1976>(mstate, dm) };
+      case 0   : return { std::make_unique<MetamorphismNone>(mstate, dm) };
       case 1   : return { std::make_unique<MetamorphismAnderson1976>(mstate, dm) };
       case 2   : return { std::make_unique<MetamorphismCROCUS>(mstate, dm) };
       default:
@@ -23,9 +23,18 @@ std::unique_ptr<Metamorphism> instantiate_metamorphism(ModelState& mstate, Dynam
 }
 
 Metamorphism::Metamorphism(ModelState& mstate, DynamicModel& dm) : _mstate(mstate), _dm(dm) { } 
-MetamorphismNone::MetamorphismNone(ModelState& mstate, DynamicModel& dm) : Metamorphism(mstate, dm) { } 
-MetamorphismAnderson1976::MetamorphismAnderson1976(ModelState& mstate, DynamicModel& dm) : Metamorphism(mstate, dm) { } 
-MetamorphismCROCUS::MetamorphismCROCUS(ModelState& mstate, DynamicModel& dm) : Metamorphism(mstate, dm) { } 
+
+MetamorphismNone::MetamorphismNone(ModelState& mstate, DynamicModel& dm) : Metamorphism(mstate, dm) { 
+   logger << "MetamorphismNone()" << std::endl; 
+} 
+
+MetamorphismAnderson1976::MetamorphismAnderson1976(ModelState& mstate, DynamicModel& dm) : Metamorphism(mstate, dm) { 
+   logger << "MetamorphismAnderson1976()" << std::endl; 
+} 
+
+MetamorphismCROCUS::MetamorphismCROCUS(ModelState& mstate, DynamicModel& dm) : Metamorphism(mstate, dm) { 
+   logger << "MetamorphismNoneCROCUS" << std::endl; 
+} 
 
 void MetamorphismNone::metamorphism() { 
    return; 

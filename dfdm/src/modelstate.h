@@ -15,9 +15,9 @@ struct Layer {
    double T;    // temperature [K]
    double dens; // density [kg/m3]
    double dz;   // thickness [m]
-   double d;    // dendricity
-   double s;    // sphericity
-   double gs;   // grain size [mm]
+   //double d;    // dendricity
+   //double s;    // sphericity
+   //double gs;   // grain size [mm]
 };
 
 /* We chose the data structure to be std::vector.
@@ -25,7 +25,7 @@ struct Layer {
    this means the newest layer has the highest index and the deepest layer has index 0 */
 typedef std::vector<Layer> Grid;
 
-const double ref_height = 0.4;            // reference height of layer in meters
+const double ref_height = 0.1;            // reference height of layer in meters
 const double dzmax = 2*ref_height;        // maximum thickness of layer
 const double dzmin = 0.8*ref_height;      // minimum thickness of layer
 const unsigned int initial_layers = 1;
@@ -39,11 +39,11 @@ class ModelState {
    void writeModelState();
    void printSummary();
 
-   bool hasReachedDensity(double dens);
+   bool hasReachedDensity(const double dens);
 
    int gridsize() { return _grid.size(); };
 
-   double getDepthOfDensity(double dens);
+   double getDepthOfDensity(const double dens);
    double totalDepth();
    double maxTemp();
    double minTemp();

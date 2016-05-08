@@ -25,12 +25,12 @@ void DynamicModel::run(){
    /* read time step */
    option_name = "general:dt";
    _dt = (long) config.getInt(option_name, true, 1, (int)1e9, -1);
-   long dt_per_year = sec_in_year / _dt;
+   const long dt_per_year = sec_in_year / _dt;
    logger << "INFO: dt_per_year = " << dt_per_year << std::endl;
 
    /* read stopping criteria */
    option_name = "stopping_criteria:which_stop";
-   int which_stop = config.getInt(option_name, false, 0, 5, 0);
+   const int which_stop = config.getInt(option_name, false, 0, 5, 0);
    bool stop_year = false;
    bool stop_dens = false;
    bool stop_depth = false;
@@ -62,7 +62,7 @@ void DynamicModel::run(){
 
    /* read heat diffusion option */
    option_name = "physics:heat_diffusion";
-   int heat_diffusion = config.getInt(option_name, false, 0, 1, 1);
+   const int heat_diffusion = config.getInt(option_name, false, 0, 1, 1);
    switch (heat_diffusion) {
       case 0   :  _has_heat = false; break;
       case 1   :  _has_heat = true; break;
@@ -144,20 +144,21 @@ void DynamicModel::doGridChecks(ModelState& mstate){
       i--;
 
    /* remove bottom layers that have attained ice density */
-   //while(grid.front().dens > 900.) 
-   //   grid.erase(grid.begin());
+   while(grid.front().dens > 900.) 
+      grid.erase(grid.begin());
    if (grid.front().dens > 900.) {
+      logger << "WARNING: ice density reached! " << std::endl;
       for (int i = 0; i < mstate.gridsize(); i++) 
-         logger << "i = " << i << " dens = " << grid[i].dens << "\n";
+         logger << "i = " << i << " dens = " << grid[i].dens << std::endl;
       }
    }
 }
 
 void DynamicModel::accumulate(ModelState& mstate) {
    Grid& grid = mstate.getGrid();
-   double dens = mstate.getSurf().density();
-   double acc = mstate.getMeteo().accumulationRate() * 1e-3 * _dt; // convert from [mm/s] to [m]
-   double dz = (rho_w/dens) * acc;
+   const double dens = mstate.getSurf().density();
+   const double acc = mstate.getMeteo().accumulationRate() * 1e-3 * _dt; // convert from [mm/s] to [m]
+   const double dz = (rho_w/dens) * acc;
 
    Layer& top = grid.back();  // top layer
    top.dens = top.dz/(top.dz+dz)*top.dens + dz/(top.dz+dz)*dens;
@@ -167,9 +168,9 @@ void DynamicModel::accumulate(ModelState& mstate) {
       // Split in unequal parts 4:1
       Layer layer;
       layer.dens  = top.dens;
-      layer.dz   = top.dz/5;
-      layer.T    = top.T;
-      top.dz = top.dz * 4/5; 
+      layer.T     = top.T;
+      layer.dz    = top.dz/5.;
+      top.dz      = top.dz * 4./5; 
       grid.push_back(layer);
    }
 }
@@ -177,10 +178,10 @@ void DynamicModel::accumulate(ModelState& mstate) {
 void DynamicModel::heatDiffusion(ModelState& mstate) {
    /* Uses forward Euler method for diffusion equation*/ 
    Grid& grid = mstate.getGrid();
-
-   double T_new[mstate.gridsize()];
-   double td[mstate.gridsize()];
+   int Np = mstate.gridsize();
    double tc;
+   double td[Np];
+   double T_new[Np];
 
    for (int i = 0; i < mstate.gridsize(); i++) {
       tc = tcair + (7.75e-5*grid[i].dens + 1.105e-6*pow(grid[i].dens,2))*(tcice - tcair); // thermal conductivity [W/m/K]
@@ -188,24 +189,17 @@ void DynamicModel::heatDiffusion(ModelState& mstate) {
    }
 
    /* TOP: Dirichlet b.c. */
-   int Np = mstate.gridsize();
    T_new[Np-1] = mstate.getMeteo().surfaceTemperature(); // top boundary equal to surface temperature
 
    /* BOTTOM: Neumann b.c. */
    T_new[0] = td[0]*_dt/grid[0].dz * (grid[1].T-grid[0].T) + grid[0].T;
 
-   for (int i = 1; i < mstate.gridsize()-1; i++) {
-      //double stab_crit = td[i] * dt / pow(grid[i].dz,2);
-      //if (stab_crit > 0.5) {
-      //   logger << "ERROR: stability criterium violated, r = " << stab_crit << std::endl;
-      //   std::abort();
-      //} else {
-      T_new[i] = td[i]*_dt/pow(grid[i].dz,2)*(grid[i-1].T-2*grid[i].T+grid[i+1].T) + grid[i].T; // # Forward in Time Centered in Space
-      //}
+   for (int i = 1; i < Np-1; i++) {
+      T_new[i] = td[i]*_dt/pow(grid[i].dz,2)*(grid[i-1].T - 2 * grid[i].T + grid[i+1].T) + grid[i].T; // # Forward in Time Centered in Space
    }
 
    /* Update temperatures */
-   for (int i = 0; i < mstate.gridsize(); i++) {
+   for (int i = 0; i < Np; i++) {
       grid[i].T = T_new[i];
    }
 }
