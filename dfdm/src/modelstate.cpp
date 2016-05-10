@@ -1,7 +1,9 @@
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <sstream>
 #include <cmath>
+#include <cstring>
 
 #include "logging.h"
 #include "dynamicmodel.h"
@@ -86,14 +88,51 @@ void ModelState::printSummary() {
 }
 
 void ModelState::writeModelState() {
-   std::ofstream f_layers;
-   f_layers.open("layers.csv");
-   f_layers << gridsize() << std::endl;
-   f_layers << "dz[m] \tmass[kg] \tdens[kg/m] \tT[K]" << std::endl;
-   for (int i = gridsize()-1; i >= 0; i--) {
-      f_layers << _grid[i].dz << "\t" << _grid[i].dz * _grid[i].dens<< "\t" << _grid[i].dens << "\t" << _grid[i].T << std::endl;
+   const int nFields = 8;
+   static const int PREC = 4; // precision
+   const char * names[nFields];
+   int k = 0;
+   names[k++] = "node depth[m] ";
+   names[k++] = "dz[m] ";
+   names[k++] = "mass[kg] ";
+   names[k++] = "rho[kg/m3] ";
+   names[k++] = "T[K] ";
+   names[k++] = "grain_gs[m] ";
+   names[k++] = "grain_d ";
+   names[k++] = "grain_s ";
+   int fldlen[nFields];
+   for (int i = 0; i<nFields; i++) {
+      fldlen[i] = std::max((int)strlen(names[i]), PREC+3); 
    }
-   f_layers.close();
+
+   std::ofstream fout;
+   fout.open("layers.txt");
+
+   /* write header */
+   fout << gridsize() << std::endl;
+   for (int i = 0; i<nFields; i++) {
+      fout << std::setw(fldlen[i]) << std::left << names[i];
+   }
+   fout << std::endl;
+
+   /* write values */
+   double node_depth = 0;
+   fout << std::setprecision(PREC);
+   for (int i = gridsize()-1; i >= 0; i--) {
+      node_depth += _grid[i].dz * 0.5;
+      k = 0;
+      fout << std::setw(fldlen[k++]) << std::left << node_depth;
+      fout << std::setw(fldlen[k++]) << std::left << _grid[i].dz;
+      fout << std::setw(fldlen[k++]) << std::left << _grid[i].dz * _grid[i].dens;
+      fout << std::setw(fldlen[k++]) << std::left << _grid[i].dens;
+      fout << std::setw(fldlen[k++]) << std::left << _grid[i].T;
+      fout << std::setw(fldlen[k++]) << std::left << _grid[i].gs;
+      fout << std::setw(fldlen[k++]) << std::left << _grid[i].d;
+      fout << std::setw(fldlen[k++]) << std::left << _grid[i].s;
+      fout << std::endl;
+      node_depth += _grid[i].dz * 0.5;
+   }
+   fout.close();
 
    std::ofstream f_z550;
    f_z550.open("z550.txt");
