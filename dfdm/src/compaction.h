@@ -54,6 +54,8 @@ class CompactionCROCUS : public Compaction{
  public:
    CompactionCROCUS(ModelState& mstate, DynamicModel& dm);
    void compaction();
+ private:
+   void compactionWindDrift();
 };
 
 } // namespace

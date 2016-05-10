@@ -7,6 +7,7 @@
 #include "modelstate.h"
 #include "dynamicmodel.h"
 #include "meteo.h"
+#include "utils.h"
 
 namespace DSM{ 
 
@@ -84,7 +85,6 @@ void CompactionAnderson::compaction() {
    Grid& grid = _mstate.getGrid();
    const double dt = (double)_dm.getDt();
 
-   static const double Tf = T0;
    static const double eta0 = 9e5;
    static const double c5 = 0.08;
    static const double c6 = 0.023;
@@ -95,7 +95,7 @@ void CompactionAnderson::compaction() {
    for (int i = grid.size()-1; i >= 0; i--) {
       layer_mass = grid[i].dz * grid[i].dens;
       const double P = overburden + 0.5*layer_mass;
-      const double eta = eta0 * exp(c5*(Tf-grid[i].T) + c6*grid[i].dens); //# viscocity, assuming no liquid
+      const double eta = eta0 * exp(c5*(T0-grid[i].T) + c6*grid[i].dens); //# viscocity, assuming no liquid
       const double cr2 = -P/eta;
 
       //double cr = cr1 + cr2;
@@ -174,8 +174,109 @@ void CompactionBarnolaPimienta::compaction() {
 }
 
 void CompactionCROCUS::compaction() {
-   return;
+   /* Compaction due to overburden (Vionnet et al, 2012) 
+      TODO: wet snow not implemented (f1 factor)
+      TODO: depth hoar formation not implemented (f2 factor)
+      */
+   Grid& grid = _mstate.getGrid();
+   const double dt = (double)_dm.getDt(); // time in seconds
+
+   static const double eta0 = 7.62237e6; 
+   static const double an = 0.1; 
+   static const double bn = 0.023; 
+   static const double cn = 1./250.;
+   static const double f1f2 = 4.0;
+   
+   double overburden = 0;
+   double layer_mass, P, eta, cr;
+   
+   for (int i = grid.size()-1; i >= 0; i--) {
+      layer_mass = grid[i].dz * grid[i].dens;
+      P = (overburden + 0.5*layer_mass)*g; // sigma_i
+      eta = f1f2 * eta0 * grid[i].dens * cn * exp(an*(T0-grid[i].T) + bn*grid[i].dens); // viscocity, assuming no liquid
+      cr = -P / eta;
+      grid[i].dz = grid[i].dz * (1+(cr*dt));
+      grid[i].dens = (layer_mass/grid[i].dz); // mass conservation
+      overburden = overburden + layer_mass;
+   }
+   compactionWindDrift();
 }
+
+void CompactionCROCUS::compactionWindDrift(){
+   /* Compaction due to wind drift */
+   Grid& grid = _mstate.getGrid();
+   const int Np = grid.size();
+   if (Np < 2) return; // no metamorphism
+   static const double rho_min = 50.; // minimum density [kg/m3]
+   static const double rho_max = 350.; // maximum density [kg/m3]
+   static const double tau_ref = (double)48 * 3600; // reference time [s]
+   const double U = _mstate.getMeteo().surfaceWind();
+   const double dt = (double)_dm.getDt(); // time step [s]
+   double Frho;
+   double MO; // mobility index
+   double SI; // driftability index
+   double tau; // time characteristic
+   double zi = 0.; // pseudo-depth in m
+   double gamma_drift;
+   double d_old, s_old, gs_old, dens_old; // DEBUG
+   for (int i = grid.size()-1; i >= 0; i--) {
+      Frho = 1.25 - 0.0042*(std::max(rho_min, grid[i].dens)-rho_min);
+      if (doubles_equal(grid[i].d, 0.0)) {
+         // Non-dendritic snow
+         MO = 0.34 * (-0.583*grid[i].gs - 0.833*grid[i].s + 0.833) + 0.66*Frho;
+      } else { 
+         // dendritic snow
+         MO = 0.34 * (0.75*grid[i].d - 0.5*grid[i].s + 0.5) + 0.66*Frho;
+      }
+      SI = -2.868 * exp(-0.085*U)+1.+MO;
+      if (SI <= 0.0) break; // first non-mobile layer has been reached
+      SI = std::min(SI, 3.25);
+      zi += 0.5 * grid[i].dz * (3.25 - SI);
+      gamma_drift = std::max(0., SI*exp(-zi/0.1));
+      tau = tau_ref / gamma_drift;
+      zi += 0.5 * grid[i].dz * (3.25 - SI);
+      // BEGIN DEBUG
+         d_old = grid[i].d;
+         s_old = grid[i].s;
+         gs_old = grid[i].gs;
+         dens_old = grid[i].dens;
+      // END DEBUG
+      if (doubles_equal(grid[i].d, 0.0)) {
+         // Non-dendritic snow
+         grid[i].s = grid[i].s + dt * (1-grid[i].s)/tau;
+         grid[i].gs = grid[i].gs + dt * 5e-4/tau;
+      } else { 
+         // dendritic snow
+         grid[i].d = grid[i].d + dt * grid[i].d/(2*tau);
+         grid[i].s = grid[i].s + dt * (1-grid[i].s)/tau;
+      }
+      // consistency checks
+      grid[i].d = std::max(std::min(1.0, grid[i].d), 0.0);
+      grid[i].s = std::max(std::min(1.0, grid[i].s), 0.0);
+      grid[i].gs = std::max(std::min(fs_gs_max, grid[i].gs), 0.0);
+
+      // density evolution
+      grid[i].dens = grid[i].dens + dt * std::max(0.0, rho_max - grid[i].dens)/tau;
+
+      if (gamma_drift > 100.0) {
+         logger << "warning: large gamma\n";
+         logger << "i / Np = " << i << " / " << grid.size() << "\n";
+         logger << "U = " << U << "\n";
+         logger << "SI = " << SI << "\n";
+         logger << "MO = " << MO << "\n";
+         logger << "zi = " << zi << "\n";
+         logger << "dens_old = " << dens_old << "\n";
+         logger << "dens_new = " << grid[i].dens << "\n";
+         logger << "d= " << s_old << "\n";
+         logger << "s= " << d_old << "\n";
+         logger << "gs= " << gs_old << "\n";
+      }
+      logger.flush();  
+ 
+   }
+}
+
+
 
 // void CompactionSpencer::compaction() {
 //    /*  Densification as Spencer2001

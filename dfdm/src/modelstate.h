@@ -17,7 +17,7 @@ struct Layer {
    double dz;   // thickness [m]
    double d;    // dendricity [-]
    double s;    // sphericity [-]
-   double gs;   // grain size [mm]
+   double gs;   // grain size [m]
 };
 
 /* We chose the data structure to be std::vector.

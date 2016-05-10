@@ -139,13 +139,18 @@ void DynamicModel::doGridChecks(ModelState& mstate){
       i--;
 
    /* remove bottom layers that have attained ice density */
-   while(grid.front().dens > 900.) 
+   while(!grid.empty() && grid.front().dens > 900.) 
       grid.erase(grid.begin());
-   if (grid.front().dens > 900.) {
-      logger << "WARNING: ice density reached! " << std::endl;
-      for (int i = 0; i < mstate.gridsize(); i++) 
-         logger << "i = " << i << " dens = " << grid[i].dens << std::endl;
-      }
+
+   if (grid.empty()) {
+      logger << "ERROR: all layers turned to ice and were removed! This probably means that something is wrong with the compaction routine or the accumulation flux" << std::endl;
+      std::abort();
+   }
+   //if (grid.front().dens > 900.) {
+   //   logger << "WARNING: ice density reached! " << std::endl;
+   //   for (int i = 0; i < mstate.gridsize(); i++) 
+   //      logger << "i = " << i << " dens = " << grid[i].dens << std::endl;
+   //   }
    }
 }
 

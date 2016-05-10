@@ -34,7 +34,7 @@ MetamorphismAnderson1976::MetamorphismAnderson1976(ModelState& mstate, DynamicMo
 } 
 
 MetamorphismCROCUS::MetamorphismCROCUS(ModelState& mstate, DynamicModel& dm) : Metamorphism(mstate, dm) { 
-   logger << "MetamorphismNoneCROCUS" << std::endl; 
+   logger << "MetamorphismCROCUS" << std::endl; 
 } 
 
 void MetamorphismNone::metamorphism() { 
@@ -66,11 +66,11 @@ void MetamorphismCROCUS::metamorphism() {
    /* Empirical laws for dry snow metamorphism. From: Vionnet et al, 2012: table 1.
       TODO: Tgrad > 15 is ommitted here (no depth hoar formation)
       */
-   const double deltat = (double)_dm.getDt() / (double) sec_in_day;
+   const double dt = (double)_dm.getDt() / (double) sec_in_day; // time in days
 
    Grid& grid = _mstate.getGrid();
    int Np = grid.size();
-   if (Np > 1) return; // can't compute gradients on single snow layer
+   if (Np < 2) return; // can't compute gradients on single snow layer
 
    double Tgrad;
    for (int i = 0; i < Np; i++) {
@@ -88,20 +88,23 @@ void MetamorphismCROCUS::metamorphism() {
       if (doubles_equal(grid[i].d, 0.0)) {
          // Non-dendritic snow
          if (Tgrad <= 5.) {
-            grid[i].s = grid[i].s + deltat * 1e9 * exp(-6000./grid[i].T);
+            grid[i].s = grid[i].s + dt * 1e9 * exp(-6000./grid[i].T);
          } else {
-            grid[i].s = grid[i].s + deltat * -2.e8 * exp(-6000./grid[i].T) * pow(Tgrad,0.4);
+            grid[i].s = grid[i].s + dt * -2.e8 * exp(-6000./grid[i].T) * pow(Tgrad,0.4);
          }
       } else {
          // Dendritic snow
          if (Tgrad <= 5.) {
-            grid[i].d = grid[i].d + deltat * -2.e8 * exp(-6000./grid[i].T);
-            grid[i].s = grid[i].s + deltat * 1e9 * exp(-6000./grid[i].T);
+            grid[i].d = grid[i].d + dt * -2.e8 * exp(-6000./grid[i].T);
+            grid[i].s = grid[i].s + dt * 1e9 * exp(-6000./grid[i].T);
          } else {
-            grid[i].d = grid[i].d + deltat * -2.e8 * exp(-6000./grid[i].T) * pow(Tgrad,0.4);
-            grid[i].s = grid[i].s + deltat * -2.e8 * exp(-6000./grid[i].T) * pow(Tgrad,0.4);
+            grid[i].d = grid[i].d + dt * -2.e8 * exp(-6000./grid[i].T) * pow(Tgrad,0.4);
+            grid[i].s = grid[i].s + dt * -2.e8 * exp(-6000./grid[i].T) * pow(Tgrad,0.4);
          }
       }
+      // consistency checks
+      grid[i].d = std::max(std::min(1.0, grid[i].d), 0.0);
+      grid[i].s = std::max(std::min(1.0, grid[i].s), 0.0);
    }
 }
 

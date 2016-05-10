@@ -149,7 +149,7 @@ double MeteoNetcdf::surfaceWind(){
    long nt = _dm.getCurrentTimeStep();
    int idx = (int) nt;
    idx = idx % _w10m_all.size();
-   return _w10m_all[idx] / _dt_forcing;
+   return _w10m_all[idx];
 }
 
 } // namespace
