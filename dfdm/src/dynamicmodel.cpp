@@ -38,6 +38,9 @@ void DynamicModel::run(){
       case 0   :  stop_year = true; break;
       case 1   :  stop_dens = true; break;
       case 2   :  stop_depth = true; break;
+      case 3   :  stop_year = true; stop_dens = true; break;
+      case 4   :  stop_year = true; stop_depth = true; break;
+      case 5   :  stop_year = true; stop_dens = true; stop_depth = true; break;
       default  : 
          logger << "ERROR: unknown value: " << which_stop << " for config option " << option_name << std::endl;
          std::abort();

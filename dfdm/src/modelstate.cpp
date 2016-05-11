@@ -102,7 +102,7 @@ void ModelState::writeModelState() {
    names[k++] = "grain_s ";
    int fldlen[nFields];
    for (int i = 0; i<nFields; i++) {
-      fldlen[i] = std::max((int)strlen(names[i]), PREC+3); 
+      fldlen[i] = std::max((int)strlen(names[i]), PREC+4); 
    }
 
    std::ofstream fout;

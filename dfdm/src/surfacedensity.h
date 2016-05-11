@@ -44,6 +44,20 @@ class SurfaceDensityCROCUS : public SurfaceDensity {
    double density();
 };
 
+class SurfaceDensityAnderson : public SurfaceDensity { 
+ public:
+   SurfaceDensityAnderson(Meteo& meteo);
+   double density();
+};
+
+class SurfaceDensityAndersonListon : public SurfaceDensity { 
+ public:
+   SurfaceDensityAndersonListon(Meteo& meteo);
+   double density();
+ private:
+   std::unique_ptr<SurfaceDensityAnderson> _sda; // needed to use the Anderson density() function to avoid code duplication
+};
+
 } // namespace
 
 #endif

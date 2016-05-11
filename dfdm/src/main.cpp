@@ -18,15 +18,26 @@
 
 namespace DSM{
 /* globally unique instances */
-std::ostream logger(NULL); 
+std::ostream logger(NULL);
 ConfigParser config;
+
+void set_logger(const std::ostream& os){
+   logger.rdbuf(os.rdbuf());
+}
+
 } // namespace
 
 using namespace DSM; 
 
 int main(int argc, char** argv){
-   //logger.open("densification.log");
-   logger.rdbuf( std::cout.rdbuf() );
+   std::ostream consolelogger(NULL);
+   consolelogger.rdbuf( std::cout.rdbuf() );
+   std::ofstream filelogger("model.log", std::ofstream::out);
+
+   /* Choose one of the following: */
+   //set_logger(consolelogger);
+   set_logger(filelogger);
+
    logger.precision(16);
 
    if (argc < 2) {
