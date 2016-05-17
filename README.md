@@ -1,6 +1,7 @@
 # README #
 
 This directory contains a dry firn densification model, written in C++, which is used to evaluate different parametrizations of snow metamorphism, compaction and fresh snow density. 
+
 ## How do I get set up? ##
 
 First, download the code from github:
@@ -9,12 +10,15 @@ First, download the code from github:
  
 Compile the firn model: 
 
-    mkdir dfdm/build
-    cd dfdm/build
+    mkdir build && cd build
     cmake -D CMAKE_C_COMPILER=gcc -D CMAKE_CXX_COMPILER=g++ -D CMAKE_CXX_FLAGS=-fPIC ..
     make -j
 
 ## Running the model ##
+
+Prepare an INI file with settings. Find example INI under examples/
+
+    ./dfdm.exe settings.ini
 
 ## Contribution guidelines ##
 
