@@ -35,8 +35,8 @@ int main(int argc, char** argv){
    std::ofstream filelogger("model.log", std::ofstream::out);
 
    /* Choose one of the following: */
-   //set_logger(consolelogger);
-   set_logger(filelogger);
+   set_logger(consolelogger);
+   //set_logger(filelogger);
 
    logger.precision(16);
 

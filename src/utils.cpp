@@ -10,7 +10,7 @@ bool file_exists(const char *fileName) {
    return infile.good();
 }
 
-bool doubles_equal(double d1, double d2){
+bool doubles_equal(const double d1, const double d2){
       return (std::abs(d1-d2) < 2.*eps ? true : false);
 }
 

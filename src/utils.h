@@ -10,7 +10,7 @@ namespace DSM{
 static const double eps = std::numeric_limits<double>::epsilon(); // machine precision
 
 bool file_exists(const char *fileName);
-bool doubles_equal(double d1, double d2); 
+bool doubles_equal(const double d1, const double d2); 
 
 } // namespace
 #endif

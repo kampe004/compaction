@@ -1,6 +1,5 @@
 #include <iostream>
 #include <sstream>
-#include <cmath>
 #include <netcdf>
 #include <iomanip>
 #include <numeric>

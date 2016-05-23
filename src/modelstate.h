@@ -15,8 +15,8 @@ struct Layer {
    double T;    // temperature [K]
    double dens; // density [kg/m3]
    double dz;   // thickness [m]
-   double d;    // dendricity [-]
-   double s;    // sphericity [-]
+   double dnd;    // dendricity [-]
+   double sph;    // sphericity [-]
    double gs;   // grain size [m]
 };
 
@@ -25,10 +25,27 @@ struct Layer {
    this means the newest layer has the highest index and the deepest layer has index 0 */
 typedef std::vector<Layer> Grid;
 
-const double ref_height = 0.2;            // reference height of layer in meters
+const double ref_height = 0.1;            // reference height of layer in meters
 const double dzmax = 2*ref_height;        // maximum thickness of layer
 const double dzmin = 0.8*ref_height;      // minimum thickness of layer
 const unsigned int initial_layers = 1;
+
+
+/* Constants that determine the 'ideal' layer thickness profile that is used in the 
+   layer checking scheme. For both the minimum and the maximum thickness an exponential
+   curve is defined by the constants a and b, given as:
+      dz = a*exp(1/zk * log(b/a)) 
+   where zk is the kink-depth, below which dz assumes a constant value (equal to that 
+   at the kink depth).  
+   */
+static const double ref_height_min_a = 0.005; // max height of first layer
+static const double ref_height_min_b = 1.00; // max height of first layer
+static const double ref_height_min_kink = 50.; // depth of kink
+
+static const double ref_height_max_a = 0.01; // max height of first layer
+static const double ref_height_max_b = 3.00; // max height of first layer
+static const double ref_height_max_kink = 50.; // depth of kink
+
 
 class ModelState {
    /* Holds physical state parameters per snow layer and methods to update layers */

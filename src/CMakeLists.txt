@@ -7,6 +7,7 @@ set(SOURCE
     ${CMAKE_CURRENT_SOURCE_DIR}/surfacedensity.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/metamorphism.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/compaction.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/heatsolver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/dictionary.c 
     ${CMAKE_CURRENT_SOURCE_DIR}/iniparser.c 

@@ -1,8 +1,8 @@
 
-#include <cmath>
+#include <math.h>
 
-#include "surfacedensity.h"
 #include "config.h"
+#include "surfacedensity.h"
 #include "meteo.h"
 #include "logging.h"
 #include "constants.h"

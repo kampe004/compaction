@@ -19,9 +19,9 @@ ModelState::ModelState(Meteo& meteo, SurfaceDensity& surf, DynamicModel& dm) : _
    Layer layer;
    layer.T      = _meteo.surfaceTemperature();
    layer.dens   = 200.;
-   layer.dz     = 0.00001;
-   layer.d      = fs_dend;
-   layer.s      = fs_sphere;
+   layer.dz     = 0.1;
+   layer.dnd    = fs_dnd;
+   layer.sph    = fs_sph;
    layer.gs     = fs_gs;
    _grid.push_back(layer);
 }
@@ -127,8 +127,8 @@ void ModelState::writeModelState() {
       fout << std::setw(fldlen[k++]) << std::left << _grid[i].dens;
       fout << std::setw(fldlen[k++]) << std::left << _grid[i].T;
       fout << std::setw(fldlen[k++]) << std::left << _grid[i].gs;
-      fout << std::setw(fldlen[k++]) << std::left << _grid[i].d;
-      fout << std::setw(fldlen[k++]) << std::left << _grid[i].s;
+      fout << std::setw(fldlen[k++]) << std::left << _grid[i].dnd;
+      fout << std::setw(fldlen[k++]) << std::left << _grid[i].sph;
       fout << std::endl;
       node_depth += _grid[i].dz * 0.5;
    }
@@ -170,14 +170,18 @@ double ModelState::maxDens() {
 }
 
 void ModelState::combineLayers(Layer& lay1, Layer& lay2) {
-   /* the resulting layer is stored in 'a' */
+   /* the merged layer is stored in 'lay1' 
+      Caller needs to delete lay2 afterwards!! */
    const double m1 = lay1.dz * lay1.dens;
    const double m2 = lay2.dz * lay2.dens;
-   lay1.d   = (lay1.d * m1 + lay2.d * m2)/(m1+m2);
-   lay1.s   = (lay1.s * m1 + lay2.s * m2)/(m1+m2);
+   const double heat1 = m1 * cpice * lay1.T;
+   const double heat2 = m2 * cpice * lay2.T;
+   lay1.dnd = (lay1.dnd * m1 + lay2.dnd * m2)/(m1+m2);
+   lay1.sph = (lay1.sph * m1 + lay2.sph * m2)/(m1+m2);
    lay1.gs  = (lay1.gs* m1 + lay2.gs* m2)/(m1+m2);
    lay1.dz  = lay1.dz + lay2.dz;
    lay1.dens = (m1+m2)/lay1.dz;
+   lay1.T   = (heat1+heat2)/(cpice * lay1.dz * lay1.dens); // Heat is conserved
 }
 
 } // namespace

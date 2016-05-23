@@ -1,4 +1,6 @@
 
+#include <math.h>
+
 #include "constants.h"
 #include "config.h"
 #include "utils.h"
@@ -85,26 +87,26 @@ void MetamorphismCROCUS::metamorphism() {
          Tgrad = std::abs(grid[i+1].T-grid[i-1].T)/(0.5*grid[i+1].dz+grid[i].dz+grid[i-1].dz);
       }
 
-      if (doubles_equal(grid[i].d, 0.0)) {
+      if (doubles_equal(grid[i].dnd, 0.0)) {
          // Non-dendritic snow
          if (Tgrad <= 5.) {
-            grid[i].s = grid[i].s + dt * 1e9 * exp(-6000./grid[i].T);
+            grid[i].sph = grid[i].sph + dt * 1e9 * exp(-6000./grid[i].T);
          } else {
-            grid[i].s = grid[i].s + dt * -2.e8 * exp(-6000./grid[i].T) * pow(Tgrad,0.4);
+            grid[i].sph = grid[i].sph + dt * -2.e8 * exp(-6000./grid[i].T) * pow(Tgrad,0.4);
          }
       } else {
          // Dendritic snow
          if (Tgrad <= 5.) {
-            grid[i].d = grid[i].d + dt * -2.e8 * exp(-6000./grid[i].T);
-            grid[i].s = grid[i].s + dt * 1e9 * exp(-6000./grid[i].T);
+            grid[i].dnd = grid[i].dnd + dt * -2.e8 * exp(-6000./grid[i].T);
+            grid[i].sph = grid[i].sph + dt * 1e9 * exp(-6000./grid[i].T);
          } else {
-            grid[i].d = grid[i].d + dt * -2.e8 * exp(-6000./grid[i].T) * pow(Tgrad,0.4);
-            grid[i].s = grid[i].s + dt * -2.e8 * exp(-6000./grid[i].T) * pow(Tgrad,0.4);
+            grid[i].dnd = grid[i].dnd + dt * -2.e8 * exp(-6000./grid[i].T) * pow(Tgrad,0.4);
+            grid[i].sph = grid[i].sph + dt * -2.e8 * exp(-6000./grid[i].T) * pow(Tgrad,0.4);
          }
       }
       // consistency checks
-      grid[i].d = std::max(std::min(1.0, grid[i].d), 0.0);
-      grid[i].s = std::max(std::min(1.0, grid[i].s), 0.0);
+      grid[i].dnd = std::max(std::min(1.0, grid[i].dnd), 0.0);
+      grid[i].sph = std::max(std::min(1.0, grid[i].sph), 0.0);
    }
 }
 

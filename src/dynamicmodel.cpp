@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <ctime>
+#include <math.h>
 
 #include "dynamicmodel.h"
 #include "modelstate.h"
@@ -12,6 +13,8 @@
 #include "surfacedensity.h"
 #include "metamorphism.h"
 #include "compaction.h"
+#include "heatsolver.h"
+#include "utils.h"
 
 namespace DSM{ 
 
@@ -63,20 +66,13 @@ void DynamicModel::run(){
       logger << "INFO: max_depth = " << max_depth << std::endl;
    }
 
-   /* read heat diffusion option */
-   option_name = "physics:heat_diffusion";
-   const int heat_diffusion = config.getInt(option_name, false, 0, 1, 1);
-   switch (heat_diffusion) {
-      case 0   :  _has_heat = false; break;
-      case 1   :  _has_heat = true; break;
-   }
-
    /* setup submodels */
-   std::unique_ptr<Meteo> meteo = instantiate_meteo(*this);
-   std::unique_ptr<SurfaceDensity> surf = instantiate_surfacedensity(*meteo);
+   std::unique_ptr<Meteo> meteo           = instantiate_meteo(*this);
+   std::unique_ptr<SurfaceDensity> surf   = instantiate_surfacedensity(*meteo);
    ModelState mstate(*meteo, *surf, *this);
-   std::unique_ptr<Metamorphism> mm = instantiate_metamorphism(mstate, *this);
-   std::unique_ptr<Compaction> comp = instantiate_compaction(mstate, *this);
+   std::unique_ptr<Metamorphism> mm       = instantiate_metamorphism(mstate, *this);
+   std::unique_ptr<Compaction> comp       = instantiate_compaction(mstate, *this);
+   std::unique_ptr<HeatSolver> hs         = instantiate_heatsolver(mstate, *this);
    
    /* print some meteo statistics */
    logger << "INFO: initial surface temperature is: " << meteo->surfaceTemperature() << std::endl;
@@ -93,7 +89,7 @@ void DynamicModel::run(){
 
       start = clock();
       for(int tstep = 0; tstep < dt_per_year; tstep++) {
-         runTimeStep(mstate, *mm, *comp);
+         runTimeStep(mstate, *mm, *comp, *hs);
       }
       double elapsed = ((double)(clock() - start)) / CLOCKS_PER_SEC;
 
@@ -109,15 +105,12 @@ void DynamicModel::run(){
    mstate.writeModelState();
 }
 
-void DynamicModel::runTimeStep(ModelState& mstate, Metamorphism& mm, Compaction& comp) {
+void DynamicModel::runTimeStep(ModelState& mstate, Metamorphism& mm, Compaction& comp, HeatSolver& hs) {
    accumulate(mstate);
    mm.metamorphism();
    comp.compaction();
    doGridChecks(mstate);
-
-   if (_has_heat && mstate.gridsize() > 1)
-      heatDiffusionShallow(mstate);
-
+   hs.heatdiffusion();
    _nt++;
 }
 
@@ -140,6 +133,19 @@ void DynamicModel::doGridChecks(ModelState& mstate){
          grid.erase(grid.begin() + i); // NOTE: this is very inefficient
       }
       i--;
+   }
+
+   /* check maximum layer thickness */
+   Layer& top = grid.back();
+   while (grid.back().dz > dzmax ) {
+      /* Split in unequal parts 4:1 
+         all vars are identical except thickness */
+      top = grid.back();
+      Layer layer = top;
+      layer.dz    = top.dz/5.;
+      top.dz      = top.dz * 4./5; 
+      grid.push_back(layer);
+   }
 
    /* remove bottom layers that have attained ice density */
    while(!grid.empty() && grid.front().dens > 900.) 
@@ -149,20 +155,46 @@ void DynamicModel::doGridChecks(ModelState& mstate){
       logger << "ERROR: all layers turned to ice and were removed! This probably means that something is wrong with the compaction routine or the accumulation flux" << std::endl;
       std::abort();
    }
-   //if (grid.front().dens > 900.) {
-   //   logger << "WARNING: ice density reached! " << std::endl;
-   //   for (int i = 0; i < mstate.gridsize(); i++) 
-   //      logger << "i = " << i << " dens = " << grid[i].dens << std::endl;
-   //   }
-   }
 }
 
 void DynamicModel::accumulate(ModelState& mstate) {
+   const double acc = mstate.getMeteo().accumulationRate();
+   if ( doubles_equal(acc, 0.0)) {return;}
+   if ( acc < 0.) {
+      accumulateNegative(mstate);
+   } else {
+      accumulatePositive(mstate);
+   }
+}
+
+void DynamicModel::accumulateNegative(ModelState& mstate) {
+   Grid& grid = mstate.getGrid();
+   const double evap = std::abs(mstate.getMeteo().accumulationRate() * 1e-3 * _dt);
+   while (grid.back().dz * grid.back().dens / rho_w < evap) {
+      if (grid.size() < 2) {
+         logger << "ERROR: not enough mass present for sublimation / evaporation" << std::endl;
+         std::abort();
+      }
+      logger << "grid size = " << grid.size() << std::endl;
+      logger << "DEBUG combining [ " << (grid.end()[-2]).dz * (grid.end()[-2]).dens / rho_w << ", "
+             << grid.back().dz * grid.back().dens / rho_w << " ] mm W.E. to meet " << evap << " mm W.E. of subl." << std::endl;
+      mstate.combineLayers(grid.end()[-2], grid.back());
+      grid.pop_back();
+   }
+   grid.back().dz -= evap * (rho_w/grid.back().dens);
+//   logger << "DEBUG removing " << evap * (rho_w/grid.back().dens) << " m from top layer" << std::endl;
+   if (grid.back().dz <= 0.) {
+      logger << "ERROR: negative layer thickness after evaporation (programmer error)" << std::endl;
+      std::abort();
+   }
+   return;
+}
+
+void DynamicModel::accumulatePositive(ModelState& mstate) {
    Grid& grid = mstate.getGrid();
    const double dens = mstate.getSurf().density();
    const double acc = mstate.getMeteo().accumulationRate() * 1e-3 * _dt; // convert from [mm/s] to [m]
    const double dz = (rho_w/dens) * acc;
-
    Layer& top = grid.back();
 
    // grain parameters are mass weighted
@@ -171,98 +203,29 @@ void DynamicModel::accumulate(ModelState& mstate) {
    const double sfall = std::min(std::max(0.08*U + 0.38, 0.5), 0.9);
    const double new_snow = dz*dens;
    const double old_snow = top.dz*top.dz;
-   top.d    = (top.d*old_snow + dfall*new_snow)/(new_snow+old_snow);
-   top.s    = (top.s*old_snow + sfall*new_snow)/(new_snow+old_snow);
+
+#ifdef DEBUG
+   const double dold = top.dnd;
+   const double sold = top.sph;
+#endif
+   
+   top.dnd    = (top.dnd*old_snow + dfall*new_snow)/(new_snow+old_snow);
+   top.sph    = (top.sph*old_snow + sfall*new_snow)/(new_snow+old_snow);
    top.gs   = (top.gs*old_snow + fs_gs*new_snow)/(new_snow+old_snow);
+
+#ifdef DEBUG
+   if (top.dnd > 1. || top.dnd < 0) {
+      logger << "DEBUG top.dnd = " << top.dnd << ", U = " << U << std::endl;
+      logger << "DEBUG dfall = " << dfall << ", sfall = " << sfall << std::endl;
+      logger << "DEBUG dold = " << dold << ", sold = " << sold << std::endl;
+      logger << "DEBUG new_snow = " << new_snow << ", old_snow = " << old_snow << std::endl;
+      std::abort();
+   }
+#endif
 
    top.dens = top.dz/(top.dz+dz)*top.dens + dz/(top.dz+dz)*dens;
    top.dz = top.dz + dz;
 
-   if (top.dz > dzmax ) {
-      // Split in unequal parts 4:1
-      Layer layer = top;
-      layer.dz    = top.dz/5.;
-      top.dz      = top.dz * 4./5; 
-      grid.push_back(layer);
-   }
-}
-
-void DynamicModel::heatDiffusion(ModelState& mstate) {
-   /* Uses forward Euler method for diffusion equation*/ 
-   Grid& grid = mstate.getGrid();
-   int Np = mstate.gridsize();
-   double tc;
-   double td[Np];
-   double T_new[Np];
-
-   for (int i = 0; i < mstate.gridsize(); i++) {
-      tc = tcair + (7.75e-5*grid[i].dens + 1.105e-6*pow(grid[i].dens,2))*(tcice - tcair); // thermal conductivity [W/m/K]
-      td[i] = tc/(grid[i].dens * cp); // thermal diffusivity [m2/s]
-
-      double stab_crit = td[i] * _dt / pow(grid[i].dz,2);
-      if (stab_crit > 0.5) {
-          logger << "WARNING: stability criterium r < 0.5 violated, r = " << stab_crit << std::endl;
-      }
-   }
-
-   /* TOP: Dirichlet b.c. */
-   T_new[Np-1] = mstate.getMeteo().surfaceTemperature(); // top boundary equal to surface temperature
-
-   /* BOTTOM: Neumann b.c. */
-   T_new[0] = td[0]*_dt/grid[0].dz * (grid[1].T-grid[0].T) + grid[0].T;
-
-   for (int i = 1; i < Np-1; i++) {
-      T_new[i] = td[i]*_dt/pow(grid[i].dz,2)*(grid[i-1].T - 2 * grid[i].T + grid[i+1].T) + grid[i].T; // # Forward in Time Centered in Space
-   }
-
-   /* Update temperature */
-   for (int i = 0; i < Np; i++) {
-      grid[i].T = T_new[i];
-   }
-}
-
-void DynamicModel::heatDiffusionShallow(ModelState& mstate) {
-   /* Uses forward Euler method for diffusion equation
-      only solves for the shallow part (top 10 metres) 
-      assume constant temperature below */ 
-   static const double solve_lim = 10.0;
-
-   Grid& grid = mstate.getGrid();
-   int Np = mstate.gridsize();
-   double tc;
-   double td;
-   double T_new[Np];
-
-   /* TOP: Dirichlet b.c. */
-   T_new[Np-1] = mstate.getMeteo().surfaceTemperature(); // top boundary equal to surface temperature
-   double total_depth = grid[Np-1].dz;
-
-   int i;
-   for (i = Np-2; i > 0; i--) {
-      tc = tcair + (7.75e-5*grid[i].dens + 1.105e-6*pow(grid[i].dens,2))*(tcice - tcair); // thermal conductivity [W/m/K]
-      td = tc/(grid[i].dens * cp); // thermal diffusivity [m2/s]
-
-      double stab_crit = td * _dt / pow(grid[i].dz,2);
-      if (stab_crit > 0.5) {
-          logger << "WARNING: stability criterium r < 0.5 violated, r = " << stab_crit << std::endl;
-      }
-      T_new[i] = td*_dt/pow(grid[i].dz,2)*(grid[i-1].T - 2 * grid[i].T + grid[i+1].T) + grid[i].T; // # Forward in Time Centered in Space
-
-      total_depth += grid[i].dz;
-      if (total_depth > solve_lim) {
-         break;
-      }
-   }
-
-   if (i == 0) {
-      /* BOTTOM: Neumann b.c. */
-      T_new[0] = td*_dt/grid[0].dz * (grid[1].T-grid[0].T) + grid[0].T;
-   }
-
-   /* Update temperature */
-   for (int k = i; k < Np; k++) {
-      grid[k].T = T_new[k];
-   }
 }
 
 } // namespace

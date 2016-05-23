@@ -1,4 +1,5 @@
-#include <cmath>
+
+#include <math.h>
 
 #include "constants.h"
 #include "config.h"
@@ -218,15 +219,14 @@ void CompactionCROCUS::compactionWindDrift(){
    double tau; // time characteristic
    double zi = 0.; // pseudo-depth in m
    double gamma_drift;
-   double d_old, s_old, gs_old, dens_old; // DEBUG
    for (int i = grid.size()-1; i >= 0; i--) {
       Frho = 1.25 - 0.0042*(std::max(rho_min, grid[i].dens)-rho_min);
-      if (doubles_equal(grid[i].d, 0.0)) {
+      if (doubles_equal(grid[i].dnd, 0.0)) {
          // Non-dendritic snow
-         MO = 0.34 * (-0.583*grid[i].gs - 0.833*grid[i].s + 0.833) + 0.66*Frho;
+         MO = 0.34 * (-0.583*grid[i].gs - 0.833*grid[i].sph + 0.833) + 0.66*Frho;
       } else { 
          // dendritic snow
-         MO = 0.34 * (0.75*grid[i].d - 0.5*grid[i].s + 0.5) + 0.66*Frho;
+         MO = 0.34 * (0.75*grid[i].dnd - 0.5*grid[i].sph + 0.5) + 0.66*Frho;
       }
       SI = -2.868 * exp(-0.085*U)+1.+MO;
       if (SI <= 0.0) break; // first non-mobile layer has been reached
@@ -235,24 +235,18 @@ void CompactionCROCUS::compactionWindDrift(){
       gamma_drift = std::max(0., SI*exp(-zi/0.1));
       tau = tau_ref / gamma_drift;
       zi += 0.5 * grid[i].dz * (3.25 - SI);
-      // BEGIN DEBUG
-         d_old = grid[i].d;
-         s_old = grid[i].s;
-         gs_old = grid[i].gs;
-         dens_old = grid[i].dens;
-      // END DEBUG
-      if (doubles_equal(grid[i].d, 0.0)) {
+      if (doubles_equal(grid[i].dnd, 0.0)) {
          // Non-dendritic snow
-         grid[i].s = grid[i].s + dt * (1-grid[i].s)/tau;
+         grid[i].sph = grid[i].sph + dt * (1-grid[i].sph)/tau;
          grid[i].gs = grid[i].gs + dt * 5e-4/tau;
       } else { 
          // dendritic snow
-         grid[i].d = grid[i].d + dt * grid[i].d/(2*tau);
-         grid[i].s = grid[i].s + dt * (1-grid[i].s)/tau;
+         grid[i].dnd = grid[i].dnd + dt * grid[i].dnd/(2*tau);
+         grid[i].sph = grid[i].sph + dt * (1-grid[i].sph)/tau;
       }
       // consistency checks
-      grid[i].d = std::max(std::min(1.0, grid[i].d), 0.0);
-      grid[i].s = std::max(std::min(1.0, grid[i].s), 0.0);
+      grid[i].dnd = std::max(std::min(1.0, grid[i].dnd), 0.0);
+      grid[i].sph = std::max(std::min(1.0, grid[i].sph), 0.0);
       grid[i].gs = std::max(std::min(fs_gs_max, grid[i].gs), 0.0);
 
       // density evolution
@@ -265,11 +259,11 @@ void CompactionCROCUS::compactionWindDrift(){
          logger << "SI = " << SI << "\n";
          logger << "MO = " << MO << "\n";
          logger << "zi = " << zi << "\n";
-         logger << "dens_old = " << dens_old << "\n";
-         logger << "dens_new = " << grid[i].dens << "\n";
-         logger << "d= " << s_old << "\n";
-         logger << "s= " << d_old << "\n";
-         logger << "gs= " << gs_old << "\n";
+         //logger << "dens_old = " << dens_old << "\n";
+         //logger << "dens_new = " << grid[i].dens << "\n";
+         //logger << "d= " << s_old << "\n";
+         //logger << "s= " << d_old << "\n";
+         //logger << "gs= " << gs_old << "\n";
       }
       logger.flush();  
  
