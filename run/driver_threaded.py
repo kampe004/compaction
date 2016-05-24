@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 
 # Threading based on:
-# http://www.boschmans.net/2010/02/03/simple-python-threading-thread-example/
+# http://chriskiehl.com/article/parallelism-in-one-line/
 
 import ConfigParser
 import os, sys
 from subprocess import check_call
 from shutil import move
 from time import strftime
-from threading import Thread, Lock
-from Queue import Queue
+from multiprocessing.dummy import Pool as ThreadPool 
 
 ###### BEGIN USER SETTINGS ######
 
@@ -19,8 +18,6 @@ config_name = 'settings.ini'
 
 ###### END USER SETTINGS ######
 
-jobs = Queue()
-singlelock = Lock()
 
 def main():
    global model_exe
@@ -30,48 +27,20 @@ def main():
    os.mkdir(out_dir)
    os.chdir(out_dir)
 
-   # spawn threads
-   for i in range(num_threads):
-      t = Thread(target=worker)
-      t.deamon = True
-      print("Thread "+str(i)+" starting")
-      t.start()
-
-   # built queue
-   for rundir in createRunDirs():
-      print(rundir)
-      jobs.put(rundir)
+   pool = ThreadPool(num_threads) 
+   pool.map(runModel, createRunDirs())
    
-def worker():
-   HERE = os.getcwd()
-   while True:
-      try: 
-         job = jobs.get(True, 1) # timeout of 1 second
-         singlelock.acquire()
-         print(job)
-         singlelock.release()
-         os.chdir(job)
-         args=[model_exe, config_name]
-         check_call(args)
-         os.chdir(HERE)
-         jobs.task_done()
-         singlelock.acquire()
-         print(str(jobs.qsize())+" jobs remaining")
-         singlelock.release()
-      except:
-         break
+def runModel(rundir):
+   print(rundir+" starting")
+   args=[model_exe, config_name]
+   check_call(args,cwd=rundir)
 
 def createRunDirs():
    rundirs = [ ]
-   HERE = os.getcwd()
+
    for physics in ['CROCUS','Anderson','CLM45','HL','Pimienta']:
-      out_dir = physics
-      os.mkdir(out_dir)
-      os.chdir(out_dir)
-      
-      #for case in ['core01', 'core03', 'SipleDome']:
-      for case in ['core03']:
-         rundirs.append(os.path.join(HERE,out_dir,case))
+      for case in ['core01', 'core03', 'SipleDome']:
+      #for case in ['core03']:
          config = ConfigParser.RawConfigParser()
       
          config.add_section('general')
@@ -101,7 +70,6 @@ def createRunDirs():
             config.set('physics', 'which_compaction', '5')
             config.set('physics', 'which_metamorphism', '2')
             config.set('fresh_snow_density', 'which_fsd', '3')
-            check_call(['touch','CROCUS'])
          elif (physics == 'Anderson'):
             # Anderson 1979 (no wind density)
             config.set('physics', 'which_compaction', '2')
@@ -126,14 +94,15 @@ def createRunDirs():
             print('undefined value for physics : '+physics)
             sys.exit(-1)
       
-         os.mkdir(case)
+         caseDir = os.path.join(physics,case)
+         os.makedirs(caseDir)
+         rundirs.append(caseDir)
+
          # Writing our configuration file
-         with open(os.path.join(case,config_name), 'wb') as configfile:
+         with open(os.path.join(caseDir,config_name), 'wb') as configfile:
              config.write(configfile)
 
-      os.chdir(HERE)
    return rundirs
 
 if __name__ == "__main__":
    main()
-   jobs.join()
