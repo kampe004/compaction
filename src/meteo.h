@@ -54,7 +54,7 @@ class MeteoIdealized : public Meteo{
 };
 
 class MeteoNetcdf : public Meteo{
-   /* idealized forcing */
+   /* Netcdf forcing (abstract) */
  public:
    MeteoNetcdf(DynamicModel& dm);
    ~MeteoNetcdf() {}; 
@@ -62,13 +62,29 @@ class MeteoNetcdf : public Meteo{
    double accumulationRate();
    double surfaceWind();
 
- private:
-   // raw data from NetCDF files
+   virtual void readForcing()=0; // initializes the forcing arrays
+
+ protected:
    int _dt_forcing; // time step for forcing files [s]
+
    std::vector<double> _acc_all;
    std::vector<double> _tskin_all;
    std::vector<double> _w10m_all;
+};
 
+class MeteoNetcdfRacmoPoint : public MeteoNetcdf{
+   /* RACMO point forcing */
+ public:
+   MeteoNetcdfRacmoPoint(DynamicModel& dm);
+   ~MeteoNetcdfRacmoPoint() {}; 
+   void readForcing();
+};
+
+class MeteoNetcdfRacmoGridded : public MeteoNetcdf{
+   /* RACMO gridded forcing, uses lat/lon to determine location in gridded files */
+ public:
+   MeteoNetcdfRacmoGridded(DynamicModel& dm);
+   ~MeteoNetcdfRacmoGridded() {}; 
    void readForcing();
 };
 
