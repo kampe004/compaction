@@ -179,7 +179,7 @@ void MeteoNetcdfRacmoPoint::readForcing(){
 
 /* class MeteoNetcdfRacmoGridded */
 MeteoNetcdfRacmoGridded::MeteoNetcdfRacmoGridded(DynamicModel& dm) : MeteoNetcdf(dm){
-   logger << "INFO: using RACMO point forcing" << std::endl;
+   logger << "INFO: using RACMO gridded forcing" << std::endl;
 
 }
 
@@ -248,7 +248,7 @@ void MeteoNetcdfRacmoGridded::readForcing(){
       logger << "ERROR: forcing file does not contain valid RACMO point data" << std::endl;
       std::abort();
    }
-   if (dims[0].getSize() != nt || dims[1].getSize() != 1 || dims[3].getSize() != nrlat || dims[3].getSize() != nrlon) {
+   if (dims[0].getSize() != nt || dims[1].getSize() != 1 || dims[2].getSize() != nrlat || dims[3].getSize() != nrlon) {
       logger << "dim 0, len = " << dims[0].getSize() << " (required: " << nt << ")" << std::endl;
       logger << "dim 1, len = " << dims[1].getSize() << " (required: " << 1 << ")" << std::endl;
       logger << "dim 2, len = " << dims[2].getSize() << " (required: " << nrlat << ")" << std::endl;
@@ -266,9 +266,9 @@ void MeteoNetcdfRacmoGridded::readForcing(){
 
    double mindist, dist;
    int idx1, idx2;
+   mindist = 1e5; 
    for (int ilat = 0; ilat < nrlat; ++ilat) {
       for (int ilon = 0; ilon < nrlon; ++ilon) {
-         mindist = 1e5; 
          dist = sqrt(pow(rlats[ilat*nrlon+ilon]-my_lat,2) + pow(rlons[ilat*nrlon+ilon]-my_lon,2));
          if (dist < mindist) {
             mindist = dist;
@@ -278,6 +278,7 @@ void MeteoNetcdfRacmoGridded::readForcing(){
       }
    }
    logger << "Best rlat/ilat indices: (" << idx1 << ", " << idx2 << ")"<< std::endl;
+   logger << "dist = " << mindist << std::endl;
    std::abort();
 
    var1.getVar(&_acc_all.front());
