@@ -277,13 +277,18 @@ void MeteoNetcdfRacmoGridded::readForcing(){
          }
       }
    }
-   logger << "Best rlat/ilat indices: (" << idx1 << ", " << idx2 << ")"<< std::endl;
-   logger << "dist = " << mindist << std::endl;
-   std::abort();
+   logger << "INFO: Best rlat/ilat indices: (" << idx1 << ", " << idx2 << ")"<< std::endl;
+   logger << "INFO: requested lat = " << my_lat << ", closest lat =" << rlats[idx1*nrlon+idx2] << std::endl;
+   logger << "INFO: requested lon = " << my_lon << ", closest lon =" << rlons[idx1*nrlon+idx2] << std::endl;
+   logger << "INFO: dist = " << mindist << std::endl;
 
-   var1.getVar(&_acc_all.front());
-   var2.getVar(&_w10m_all.front());
-   var3.getVar(&_tskin_all.front());
+   // Naming follows : https://www.unidata.ucar.edu/software/netcdf/docs/cxx4/classnetCDF_1_1NcVar.html#a74d273a0d5f572d04b78c92cd0f5d41b
+   std::vector<size_t> start = {0, 0, idx1, idx2};
+   std::vector<size_t> count = {nt, 1, 1, 1};
+
+   var1.getVar(start, count, &_acc_all.front());
+   var2.getVar(start, count, &_w10m_all.front());
+   var3.getVar(start, count, &_tskin_all.front());
    logger << "INFO: read " << _acc_all.size() << " timesteps from NetCDF files" << std::endl;
 
    long total_sec = (long)_dt_forcing * (long)(nt);
