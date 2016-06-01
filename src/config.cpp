@@ -44,13 +44,13 @@ double ConfigParser::getDouble(const char* name, bool required, double minval, d
    double tmp;
    if (required){
       double missval = -9999.;
-      tmp = iniparser_getint(_dict, name, missval);
+      tmp = iniparser_getdouble(_dict, name, missval);
       if (doubles_equal(tmp, missval)){
          logger << "ERROR: " << rtnnam << " required value not found: " << name << std::endl;
          std::abort();
       }
    } else {
-      tmp = iniparser_getint(_dict, name, defval);
+      tmp = iniparser_getdouble(_dict, name, defval);
    }
    if (tmp < minval || tmp > maxval) {
       logger << "ERROR: " << rtnnam << " value out of bounds " << name << std::endl;
