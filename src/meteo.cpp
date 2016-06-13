@@ -57,6 +57,12 @@ MeteoIdealized::MeteoIdealized(DynamicModel& dm) : Meteo(dm){
    _ideal_w10m = config.getDouble(option_name, true, 0, 1000, 0);
 }
 
+double MeteoIdealized::surfaceTemperature() {
+   const long nt = _dm.getCurrentTimeInSeconds();
+   const long t =  nt % sec_in_year;
+   return _ideal_T_amp*cos(2*M_PI*(double)t/(double)sec_in_year) + _ideal_T_mean;
+}
+
 /* class MeteoNetcdf */
 MeteoNetcdf::MeteoNetcdf(DynamicModel& dm) : Meteo(dm){
    logger << "INFO: using Netcdf forcing" << std::endl;

@@ -14,7 +14,7 @@ namespace DSM{
 
 std::unique_ptr<Compaction> instantiate_compaction(ModelState& mstate, DynamicModel& dm){
    const char * option_name = "physics:which_compaction";
-   int which_compaction = config.getInt(option_name, false, 0, 5, 1);
+   int which_compaction = config.getInt(option_name, false, 0, 6, 1);
 
    switch (which_compaction) {
       case 0   : return { std::make_unique<CompactionNone>(mstate, dm) };
@@ -23,6 +23,7 @@ std::unique_ptr<Compaction> instantiate_compaction(ModelState& mstate, DynamicMo
       case 3   : return { std::make_unique<CompactionBarnolaPimienta>(mstate, dm) };
       case 4   : return { std::make_unique<CompactionLigtenberg>(mstate, dm) };
       case 5   : return { std::make_unique<CompactionCROCUS>(mstate, dm) };
+      case 6   : return { std::make_unique<CompactionCROCUSDriftOnly>(mstate, dm) };
       default:
          logger << "ERROR: unknown value: " << which_compaction << " for config option " << option_name << std::endl;
          std::abort();
@@ -53,6 +54,10 @@ CompactionLigtenberg::CompactionLigtenberg(ModelState& mstate, DynamicModel& dm)
 
 CompactionCROCUS::CompactionCROCUS(ModelState& mstate, DynamicModel& dm) : Compaction(mstate, dm) { 
    logger << "CompactionCROCUS()" << std::endl; 
+}
+
+CompactionCROCUSDriftOnly::CompactionCROCUSDriftOnly(ModelState& mstate, DynamicModel& dm) : CompactionCROCUS(mstate, dm) { 
+   logger << "CompactionCROCUSDriftOnly()" << std::endl; 
 }
 
 void CompactionLigtenberg::compaction() {
@@ -219,6 +224,7 @@ void CompactionCROCUS::compactionWindDrift(){
    double tau; // time characteristic
    double zi = 0.; // pseudo-depth in m
    double gamma_drift;
+   double u0, afac; // TUNING
    for (int i = grid.size()-1; i >= 0; i--) {
       Frho = 1.25 - 0.0042*(std::max(rho_min, grid[i].dens)-rho_min);
       if (doubles_equal(grid[i].dnd, 0.0)) {
@@ -228,13 +234,20 @@ void CompactionCROCUS::compactionWindDrift(){
          // dendritic snow
          MO = 0.34 * (0.75*grid[i].dnd - 0.5*grid[i].sph + 0.5) + 0.66*Frho;
       }
+
+      /* LvK: tuning
+      static const double wind_fac = -0.085;
+      u0 = log((-1.-MO)/-2.868) / -0.085;
+      u0 = u0 - 2.;
+      afac = (-1. - MO) / exp(wind_fac * u0 ); // based on exponent factor, determine pre-factor by setting SI = 0 to the same U-value
+      SI = afac * exp(wind_fac*U) + 1 + MO; 
+      */
       SI = -2.868 * exp(-0.085*U)+1.+MO;
+
       if (SI <= 0.0) break; // first non-mobile layer has been reached
       SI = std::min(SI, 3.25);
-      zi += 0.5 * grid[i].dz * (3.25 - SI);
       gamma_drift = std::max(0., SI*exp(-zi/0.1));
       tau = tau_ref / gamma_drift;
-      zi += 0.5 * grid[i].dz * (3.25 - SI);
       if (doubles_equal(grid[i].dnd, 0.0)) {
          // Non-dendritic snow
          grid[i].sph = grid[i].sph + dt * (1-grid[i].sph)/tau;
@@ -250,6 +263,7 @@ void CompactionCROCUS::compactionWindDrift(){
       grid[i].gs = std::max(std::min(fs_gs_max, grid[i].gs), 0.0);
 
       // density evolution
+      //logger << "DEBUG dens = " << grid[i].dens << ", U = " << U << ", zi = " << zi << ", drho / 24h = " << 24*3600 * std::max(0.0, rho_max - grid[i].dens)/tau << std::endl;
       grid[i].dens = grid[i].dens + dt * std::max(0.0, rho_max - grid[i].dens)/tau;
 
       if (gamma_drift > 100.0) {
@@ -266,10 +280,14 @@ void CompactionCROCUS::compactionWindDrift(){
          //logger << "gs= " << gs_old << "\n";
       }
       logger.flush();  
+      zi += grid[i].dz * (3.25 - SI);
  
    }
 }
 
+void CompactionCROCUSDriftOnly::compaction() {
+   compactionWindDrift();
+}
 
 
 // void CompactionSpencer::compaction() {

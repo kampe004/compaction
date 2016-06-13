@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include <math.h>
 
 #include "constants.h"
 
@@ -43,9 +44,10 @@ class MeteoIdealized : public Meteo{
  public:
    MeteoIdealized(DynamicModel& dm);
    ~MeteoIdealized() {}; 
-   double surfaceTemperature() { return _ideal_T_mean; }
+   double surfaceTemperature(); 
    double accumulationRate() { return _ideal_acc / sec_in_year; }
    double surfaceWind() { return _ideal_w10m; }
+
  private:
    double _ideal_T_mean;
    double _ideal_T_amp;
