@@ -176,8 +176,8 @@ void DynamicModel::accumulateNegative(ModelState& mstate) {
    const double evap = std::abs(mstate.getMeteo().accumulationRate() * 1e-3 * _dt);
    while (grid.back().dz * grid.back().dens / rho_w < evap) {
       if (grid.size() < 2) {
-         logger << "ERROR: not enough mass present for sublimation / evaporation" << std::endl;
-         std::abort();
+         logger << "WARNING: not enough mass present for sublimation / evaporation" << std::endl;
+         return;
       }
       logger << "grid size = " << grid.size() << std::endl;
       logger << "DEBUG combining [ " << (grid.end()[-2]).dz * (grid.end()[-2]).dens / rho_w << ", "
