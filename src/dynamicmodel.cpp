@@ -5,6 +5,7 @@
 #include <math.h>
 
 #include "dynamicmodel.h"
+#include "history.h"
 #include "modelstate.h"
 #include "config.h"
 #include "constants.h"
@@ -72,7 +73,8 @@ void DynamicModel::run(){
    ModelState mstate(*meteo, *surf, *this);
    std::unique_ptr<Metamorphism> mm       = instantiate_metamorphism(mstate, *this);
    std::unique_ptr<Compaction> comp       = instantiate_compaction(mstate, *this);
-   std::unique_ptr<HeatSolver> hs         = instantiate_heatsolver(mstate, *this);
+   std::unique_ptr<HeatSolver> heat       = instantiate_heatsolver(mstate, *this);
+   History history(mstate);
    
    /* print some meteo statistics */
    logger << "INFO: initial surface temperature is: " << meteo->surfaceTemperature() << std::endl;
@@ -89,7 +91,8 @@ void DynamicModel::run(){
 
       start = clock();
       for(int tstep = 0; tstep < dt_per_year; tstep++) {
-         runTimeStep(mstate, *mm, *comp, *hs);
+         runTimeStep(mstate, *mm, *comp, *heat);
+         history.update();
       }
       double elapsed = ((double)(clock() - start)) / CLOCKS_PER_SEC;
 
@@ -103,14 +106,15 @@ void DynamicModel::run(){
    }
    mstate.printSummary();
    mstate.writeModelState();
+   history.writeHistory();
 }
 
-void DynamicModel::runTimeStep(ModelState& mstate, Metamorphism& mm, Compaction& comp, HeatSolver& hs) {
+void DynamicModel::runTimeStep(ModelState& mstate, Metamorphism& mm, Compaction& comp, HeatSolver& heat) {
    accumulate(mstate);
    mm.metamorphism();
    comp.compaction();
    doGridChecks(mstate);
-   hs.heatdiffusion();
+   heat.heatdiffusion();
    _nt++;
 }
 

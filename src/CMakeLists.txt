@@ -3,6 +3,7 @@ set(SOURCE
     ${CMAKE_CURRENT_SOURCE_DIR}/config.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/dynamicmodel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/meteo.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/history.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modelstate.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/surfacedensity.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/metamorphism.cpp
