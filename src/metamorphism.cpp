@@ -50,12 +50,13 @@ void MetamorphismAnderson1976::metamorphism() {
    static const double Tf = T0;
    static const double c3 = 2.777e-6;
    static const double c4 = 0.04;
+   static const double dm = 100.; // Upper Limit on Destructive Metamorphism Compaction [kg/m3]
 
    double layer_mass;
    
    for (int i = grid.size()-1; i >= 0; i--) {
       layer_mass = grid[i].dz * grid[i].dens;
-      double c1 = grid[i].dens < 100. ? 1.0 : exp(-0.046*(grid[i].dens-100.));
+      double c1 = grid[i].dens < dm ? 1.0 : exp(-0.046*(grid[i].dens-dm));
       double c2 = 1 ; // assuming no liquid! 
       double cr1 = -c3*c2*c1*exp(-c4*(Tf-grid[i].T)); // compaction due to destructive metamorphism
       //double cr = cr1 + cr2;
