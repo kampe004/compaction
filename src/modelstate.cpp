@@ -102,7 +102,7 @@ void ModelState::writeModelState() {
    names[k++] = "grain_s ";
    int fldlen[nFields];
    for (int i = 0; i<nFields; i++) {
-      fldlen[i] = std::max((int)strlen(names[i]), PREC+4); 
+      fldlen[i] = std::max((int)strlen(names[i])+1, PREC+5); 
    }
 
    std::ofstream fout;
@@ -111,7 +111,7 @@ void ModelState::writeModelState() {
    /* write header */
    fout << gridsize() << std::endl;
    for (int i = 0; i<nFields; i++) {
-      fout << std::setw(fldlen[i]) << std::left << names[i];
+      fout << std::setw(fldlen[i]) << std::left << names[i] << " ";
    }
    fout << std::endl;
 
@@ -121,14 +121,14 @@ void ModelState::writeModelState() {
    for (int i = gridsize()-1; i >= 0; i--) {
       node_depth += _grid[i].dz * 0.5;
       k = 0;
-      fout << std::setw(fldlen[k++]) << std::left << node_depth;
-      fout << std::setw(fldlen[k++]) << std::left << _grid[i].dz;
-      fout << std::setw(fldlen[k++]) << std::left << _grid[i].dz * _grid[i].dens;
-      fout << std::setw(fldlen[k++]) << std::left << _grid[i].dens;
-      fout << std::setw(fldlen[k++]) << std::left << _grid[i].T;
-      fout << std::setw(fldlen[k++]) << std::left << _grid[i].gs;
-      fout << std::setw(fldlen[k++]) << std::left << _grid[i].dnd;
-      fout << std::setw(fldlen[k++]) << std::left << _grid[i].sph;
+      fout << std::setw(fldlen[k++]) << std::left << node_depth << " ";
+      fout << std::setw(fldlen[k++]) << std::left << _grid[i].dz << " ";
+      fout << std::setw(fldlen[k++]) << std::left << _grid[i].dz * _grid[i].dens << " ";
+      fout << std::setw(fldlen[k++]) << std::left << _grid[i].dens << " ";
+      fout << std::setw(fldlen[k++]) << std::left << _grid[i].T << " ";
+      fout << std::setw(fldlen[k++]) << std::left << _grid[i].gs << " ";
+      fout << std::setw(fldlen[k++]) << std::left << _grid[i].dnd << " ";
+      fout << std::setw(fldlen[k++]) << std::left << _grid[i].sph << " ";
       fout << std::endl;
       node_depth += _grid[i].dz * 0.5;
    }
