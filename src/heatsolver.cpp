@@ -191,6 +191,11 @@ void HeatSolverImplicit::heatdiffusion() {
    }
    for (int i = 0; i<Np; i++) {
       grid[i].T = rhs[i];
+      if (grid[i].T > 280.) {
+         logger << "ERROR: unrealistic temperature i = " << i << ", T[i] = " << grid[i].T << std::endl;
+         logger << "ERROR: Probably this is caused by a high temperature gradient through a thin layer (too small dx /  too big dt)" << std::endl;
+         std::abort();
+      }
    }
 }
 
