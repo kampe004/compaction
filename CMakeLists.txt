@@ -13,4 +13,7 @@ set(CMAKE_C_FLAGS_DEBUG "-g -O0 ")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 ")
 
 add_subdirectory(src)
-add_executable(dfdm.exe ${SOURCE})
+add_executable(dfdm.exe ${SOURCE} ${MAIN})
+
+add_subdirectory(src/unit_test)
+add_executable(unit_test.exe ${SOURCE} ${TEST})
