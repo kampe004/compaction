@@ -32,6 +32,10 @@ void DynamicModel::run(){
    const long dt_per_year = sec_in_year / _dt;
    logger << "INFO: dt_per_year = " << dt_per_year << std::endl;
 
+   /* history stuff */
+   option_name = "general:history_offset";
+   const int hist_offset = (long) config.getInt(option_name, false, 0, (int)1e9, 1);
+
    /* read stopping criteria */
    option_name = "stopping_criteria:which_stop";
    const int which_stop = config.getInt(option_name, false, 0, 5, 0);
@@ -92,7 +96,8 @@ void DynamicModel::run(){
       start = clock();
       for(int tstep = 0; tstep < dt_per_year; tstep++) {
          runTimeStep(mstate, *mm, *comp, *heat);
-         history.update();
+         if (kYear >= hist_offset)
+            history.update();
       }
       double elapsed = ((double)(clock() - start)) / CLOCKS_PER_SEC;
 
