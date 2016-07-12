@@ -1,5 +1,5 @@
 
-#include <math.h>
+#include <cmath>
 
 #include "constants.h"
 #include "config.h"

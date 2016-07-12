@@ -1,5 +1,5 @@
 
-#include <math.h>
+#include <cmath>
 
 #include "constants.h"
 #include "config.h"
@@ -235,13 +235,13 @@ void CompactionCROCUS::compactionWindDrift(){
          MO = 0.34 * (0.75*grid[i].dnd - 0.5*grid[i].sph + 0.5) + 0.66*Frho;
       }
 
-      /* LvK: tuning
-      static const double wind_fac = -0.085;
-      u0 = log((-1.-MO)/-2.868) / -0.085;
-      u0 = u0 - 2.;
-      afac = (-1. - MO) / exp(wind_fac * u0 ); // based on exponent factor, determine pre-factor by setting SI = 0 to the same U-value
-      SI = afac * exp(wind_fac*U) + 1 + MO; 
-      */
+      /* LvK: tuning */
+//      static const double wind_fac = -0.085;
+//      u0 = log((-1.-MO)/-2.868) / -0.085;
+//      u0 = u0 - 2.;
+//      afac = (-1. - MO) / exp(wind_fac * u0 ); // based on exponent factor, determine pre-factor by setting SI = 0 to the same U-value
+//      SI = afac * exp(wind_fac*U) + 1 + MO; 
+      /* LvK: end of Tuning */
       SI = -2.868 * exp(-0.085*U)+1.+MO;
 
       if (SI <= 0.0) break; // first non-mobile layer has been reached

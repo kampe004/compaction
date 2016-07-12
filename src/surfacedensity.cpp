@@ -1,5 +1,5 @@
 
-#include <math.h>
+#include <cmath>
 
 #include "config.h"
 #include "surfacedensity.h"

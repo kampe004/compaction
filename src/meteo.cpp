@@ -4,7 +4,7 @@
 #include <iomanip>
 #include <numeric>
 #include <string>
-#include <math.h>
+#include <cmath>
 
 #include "config.h"
 #include "logging.h"

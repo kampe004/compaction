@@ -3,7 +3,7 @@
 
 #include <memory>
 #include <vector>
-#include <math.h>
+#include <cmath>
 
 #include "constants.h"
 

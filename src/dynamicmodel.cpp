@@ -2,7 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <ctime>
-#include <math.h>
+#include <cmath>
 
 #include "dynamicmodel.h"
 #include "history.h"
