@@ -1,5 +1,4 @@
 set(SOURCE
-    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp 
     ${CMAKE_CURRENT_SOURCE_DIR}/config.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/dynamicmodel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/meteo.cpp
@@ -12,5 +11,10 @@ set(SOURCE
     ${CMAKE_CURRENT_SOURCE_DIR}/utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/dictionary.c 
     ${CMAKE_CURRENT_SOURCE_DIR}/iniparser.c 
+    PARENT_SCOPE
+    )
+
+set(MAIN
+    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp 
     PARENT_SCOPE
     )

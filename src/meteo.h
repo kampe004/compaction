@@ -90,6 +90,26 @@ class MeteoNetcdfRacmoGridded : public MeteoNetcdf{
    void readForcing();
 };
 
+class MeteoSimple : public Meteo {
+ /* Simple Meteo class, for testing purposes */
+ public:
+   MeteoSimple(DynamicModel& dm) : Meteo(dm), _simple_T(T0), _simple_w10m(0.), _simple_acc(0.) {}
+   ~MeteoSimple() {}; 
+   double surfaceTemperature() {return _simple_T;}
+   double accumulationRate() {return _simple_acc;}
+   double surfaceWind() {return _simple_w10m;}
+
+   void setTemperature(double T) { _simple_T = T;}
+   void setWind(double W) { _simple_w10m = W;}
+   void setAccumulation(double A) { _simple_acc = A;}
+
+ private:
+   double _simple_T;
+   double _simple_w10m;
+   double _simple_acc;
+};
+
+
 } // namespace
 
 #endif
