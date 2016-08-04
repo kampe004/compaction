@@ -33,8 +33,8 @@ void DynamicModel::run(){
    logger << "INFO: dt_per_year = " << dt_per_year << std::endl;
 
    /* history stuff */
-   option_name = "general:history_offset";
-   const int hist_offset = (long) config.getInt(option_name, false, 0, (int)1e9, 1);
+   option_name = "history:offset";
+   const int hist_offset = config.getInt(option_name, false, 0, (int)1e9, 1);
 
    /* read stopping criteria */
    option_name = "stopping_criteria:which_stop";
@@ -97,7 +97,7 @@ void DynamicModel::run(){
       for(int tstep = 0; tstep < dt_per_year; tstep++) {
          runTimeStep(mstate, *mm, *comp, *heat);
          if (kYear >= hist_offset)
-            history.update();
+            history.update(startOfDay(tstep * _dt));
       }
       double elapsed = ((double)(clock() - start)) / CLOCKS_PER_SEC;
 
@@ -236,5 +236,18 @@ void DynamicModel::accumulatePositive(ModelState& mstate) {
    top.dz = top.dz + dz;
 
 }
+
+bool DynamicModel::startOfDay(long curr_sec){
+   /* 
+      Some History updates are only performed at the beginning of a new day.
+      This is a somewhat crude approach and won't work if a day does not 
+      nicely divide by the model timestep!
+
+      TODO: replace with class Time, that stores the current timestep and 
+      has a function at_beginning_of_day()
+   */
+   return (curr_sec % 86400 == 0 ? true : false);
+} 
+
 
 } // namespace

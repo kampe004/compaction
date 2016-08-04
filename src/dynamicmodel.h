@@ -30,6 +30,8 @@ class DynamicModel{
    void accumulate(ModelState& mstate);
    void accumulatePositive(ModelState& mstate);
    void accumulateNegative(ModelState& mstate);
+
+   bool startOfDay(long curr_sec);
 };
 
 } // namespace
