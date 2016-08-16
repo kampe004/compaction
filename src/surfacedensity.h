@@ -58,6 +58,12 @@ class SurfaceDensityAndersonListon : public SurfaceDensity {
    std::unique_ptr<SurfaceDensityAnderson> _sda; // needed to use the Anderson density() function to avoid code duplication
 };
 
+class SurfaceDensitySlater2016 : public SurfaceDensity { 
+ public:
+   SurfaceDensitySlater2016(Meteo& meteo);
+   double density();
+};
+
 } // namespace
 
 #endif
