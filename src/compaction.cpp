@@ -247,6 +247,8 @@ void CompactionCROCUS::compactionWindDrift(){
 
       if (SI <= 0.0) break; // first non-mobile layer has been reached
       SI = std::min(SI, 3.25);
+      zi += grid[i].dz * 0.5 *  (3.25 - SI);
+
       gamma_drift = std::max(0., SI*exp(-zi/0.1));
       tau = tau_ref / gamma_drift;
       if (doubles_equal(grid[i].dnd, 0.0)) {
@@ -283,8 +285,7 @@ void CompactionCROCUS::compactionWindDrift(){
          //logger << "gs= " << gs_old << "\n";
       }
       logger.flush();  
-      zi += grid[i].dz * (3.25 - SI);
- 
+      zi += grid[i].dz * 0.5 *  (3.25 - SI);
    }
 }
 
