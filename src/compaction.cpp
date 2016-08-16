@@ -218,6 +218,7 @@ void CompactionCROCUS::compactionWindDrift(){
    static const double tau_ref = (double)48 * 3600; // reference time [s]
    const double U = _mstate.getMeteo().surfaceWind();
    const double dt = (double)_dm.getDt(); // time step [s]
+   double layer_mass;
    double Frho;
    double MO; // mobility index
    double SI; // driftability index
@@ -262,9 +263,11 @@ void CompactionCROCUS::compactionWindDrift(){
       grid[i].sph = std::max(std::min(1.0, grid[i].sph), 0.0);
       grid[i].gs = std::max(std::min(fs_gs_max, grid[i].gs), 0.0);
 
+      layer_mass = grid[i].dz * grid[i].dens;
       // density evolution
       //logger << "DEBUG dens = " << grid[i].dens << ", U = " << U << ", zi = " << zi << ", drho / 24h = " << 24*3600 * std::max(0.0, rho_max - grid[i].dens)/tau << std::endl;
       grid[i].dens = grid[i].dens + dt * std::max(0.0, rho_max - grid[i].dens)/tau;
+      grid[i].dz = layer_mass/grid[i].dens; // # mass conservation
 
       if (gamma_drift > 100.0) {
          logger << "warning: large gamma\n";
