@@ -32,44 +32,36 @@ void DynamicModel::run(){
    const long dt_per_year = sec_in_year / _dt;
    logger << "INFO: dt_per_year = " << dt_per_year << std::endl;
 
-   /* history stuff */
-   option_name = "history:offset";
-   const int hist_offset = config.getInt(option_name, false, 0, (int)1e9, 1);
-
    /* read stopping criteria */
-   option_name = "stopping_criteria:which_stop";
-   const int which_stop = config.getInt(option_name, false, 0, 5, 0);
-   bool stop_year = false;
-   bool stop_dens = false;
-   bool stop_depth = false;
-   switch (which_stop) {
-      case 0   :  stop_year = true; break;
-      case 1   :  stop_dens = true; break;
-      case 2   :  stop_depth = true; break;
-      case 3   :  stop_year = true; stop_dens = true; break;
-      case 4   :  stop_year = true; stop_depth = true; break;
-      case 5   :  stop_year = true; stop_dens = true; stop_depth = true; break;
+   option_name = "stopping_criteria:which_spinup";
+   const int which_spinup = config.getInt(option_name, false, 0, 1, 0);
+   bool spinup_stop_year = false;
+   bool spinup_stop_dens = false;
+   switch (which_spinup) {
+      case 0   :  spinup_stop_year = true; break;
+      case 1   :  spinup_stop_dens = true; break;
+//      case 2   :  stop_depth = true; break;
+//      case 3   :  stop_year = true; stop_dens = true; break;
+//      case 4   :  stop_year = true; stop_depth = true; break;
+//      case 5   :  stop_year = true; stop_dens = true; stop_depth = true; break;
       default  : 
-         logger << "ERROR: unknown value: " << which_stop << " for config option " << option_name << std::endl;
+         logger << "ERROR: unknown value: " << which_spinup << " for config option " << option_name << std::endl;
          std::abort();
    }
-   int max_years;
-   double max_dens, max_depth;
-   if (stop_year) {
-      option_name = "stopping_criteria:years";
-      max_years = config.getInt(option_name, true, 1, (int)1e9, -1);
-      logger << "INFO: max_years = " << max_years << std::endl;
+   int spinup_nyear;
+   double spinup_dens;
+   if (spinup_stop_year) {
+      option_name = "stopping_criteria:spinup_nyear";
+      logger << "INFO: spinup is done based on number of years" << std::endl;
+      spinup_nyear = config.getInt(option_name, true, 0, (int)1e9, -1);
    }
-   if (stop_dens) {
-      option_name = "stopping_criteria:dens";
-      max_dens = config.getDouble(option_name, true, 1., 1000., -1.);
-      logger << "INFO: max_dens = " << max_dens << std::endl;
+   if (spinup_stop_dens) {
+      option_name = "stopping_criteria:spinup_dens";
+      logger << "INFO: spinup is done based on target density" << std::endl;
+      spinup_dens = config.getDouble(option_name, true, 1., 900., -1.);
    }
-   if (stop_depth) {
-      option_name = "stopping_criteria:depth";
-      max_depth = config.getDouble(option_name, true, 1., 1000., -1.);
-      logger << "INFO: max_depth = " << max_depth << std::endl;
-   }
+  option_name = "stopping_criteria:nyear";
+  const int nyear = config.getInt(option_name, true, 1, (int)1e9, -1);
 
    /* setup submodels */
    std::unique_ptr<Meteo> meteo           = instantiate_meteo(*this);
@@ -85,23 +77,39 @@ void DynamicModel::run(){
    logger << "INFO: initial surface wind is: " << meteo->surfaceWind() << std::endl;
    logger << "INFO: initial accumulation rate is: " << meteo->accumulationRate() << std::endl;
 
-   /* start of the main time loop */
+   /* start of the spinup time loop */
    std::clock_t start;
    int kYear = 0;
    while( 
-         (stop_year ? kYear < max_years : true)
-      && (stop_dens ? !mstate.hasReachedDensity(max_dens) : true)
-      && (stop_depth ? mstate.totalDepth() < max_depth : true) ){
+         (spinup_stop_year ? kYear < spinup_nyear : true)
+      && (spinup_stop_dens ? !mstate.hasReachedDensity(spinup_dens) : true)) {
 
       start = clock();
       for(int tstep = 0; tstep < dt_per_year; tstep++) {
          runTimeStep(mstate, *mm, *comp, *heat);
-         if (kYear >= hist_offset)
-            history.update(startOfDay(tstep * _dt));
       }
       double elapsed = ((double)(clock() - start)) / CLOCKS_PER_SEC;
 
-      logger  << "year=" << kYear
+      logger  << "spinup year=" << kYear
+            << ", Tmin=" << mstate.minTemp() 
+            << ", Tmax=" << mstate.maxTemp() 
+            << ", rho_max=" << mstate.maxDens()
+            << ", sec/year=" << elapsed 
+            << ", year/hour=" << 3600./elapsed << std::endl;
+      kYear++; 
+   }
+
+   /* start of the main time loop */
+   kYear = 0;
+   while( kYear < nyear ) { 
+      start = clock();
+      for(int tstep = 0; tstep < dt_per_year; tstep++) {
+         runTimeStep(mstate, *mm, *comp, *heat);
+         history.update(startOfDay(tstep * _dt));
+      }
+      double elapsed = ((double)(clock() - start)) / CLOCKS_PER_SEC;
+
+      logger  << "model year=" << kYear
             << ", Tmin=" << mstate.minTemp() 
             << ", Tmax=" << mstate.maxTemp() 
             << ", rho_max=" << mstate.maxDens()

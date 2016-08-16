@@ -10,8 +10,16 @@ namespace DSM{
 History::History(ModelState& mstate) : _mstate(mstate) {
    _ro1m.sum      = 0.0;
    _ro1m.N        = 0;
+   _ro1m.missing  = false;
    _ro1mavg.sum   = 0.0;
    _ro1mavg.N     = 0;
+   _ro1mavg.missing = false;
+   _z550.sum      = 0.0;
+   _z550.N        = 0;
+   _z550.missing  = false;
+   _z830.sum      = 0.0;
+   _z830.N        = 0;
+   _z830.missing  = false;
    _nrec          = 0;
 
    const char * option_name;
@@ -107,6 +115,21 @@ void History::update(bool start_of_day) {
       ro1m_avg += grid[i].dz * grid[i].dens;
    }
 
+   const double z550 = _mstate.getDepthOfDensity(550.);
+   if (z550 > 0.) {
+      _z550.sum += z550; 
+      _z550.N += 1;
+   } else {
+      _z550.missing = true;
+   }
+
+   const double z830 = _mstate.getDepthOfDensity(830.);
+   if (z830 > 0.) {
+      _z830.sum += z830; 
+      _z830.N += 1;
+   } else {
+      _z830.missing = true;
+   }
 
    if (_have_netcdf_output && start_of_day) {
       if (_hist_freq != 1) {
@@ -194,6 +217,24 @@ void History::writeHistory() {
       f_ro1mavg << -1 << std::endl;
    }
    f_ro1mavg.close();
+
+   std::ofstream f_z550;
+   f_z550.open("z550.txt");
+   if (_z550.missing) {
+      f_z550 << -1.0 << std::endl;
+   } else {
+      f_z550 << (_z550.sum / _z550.N) << std::endl;
+   }
+   f_z550.close();
+
+   std::ofstream f_z830;
+   f_z830.open("z830.txt");
+   if (_z830.missing) {
+      f_z830 << -1.0 << std::endl;
+   } else {
+      f_z830 << (_z830.sum / _z830.N) << std::endl;
+   }
+   f_z830.close();
 }
 
 

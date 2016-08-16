@@ -79,11 +79,11 @@ void ModelState::printSummary() {
 
    double z550 = getZ550();
    if (z550 > 0.){
-      logger << "z550 depth = " << z550 << std::endl;
+      logger << "final z550 depth = " << z550 << std::endl;
    }
    double z830 = getZ830();
    if (z830 > 0.){
-      logger << "z830 depth = " << z830 << std::endl;
+      logger << "final z830 depth = " << z830 << std::endl;
    }
 }
 
@@ -134,15 +134,6 @@ void ModelState::writeModelState() {
    }
    fout.close();
 
-   std::ofstream f_z550;
-   f_z550.open("z550.txt");
-   f_z550 << getZ550() << std::endl ;
-   f_z550.close();
-
-   std::ofstream f_z830;
-   f_z830.open("z830.txt");
-   f_z830 << getZ830() << std::endl ;
-   f_z830.close();
 }
 
 double ModelState::maxTemp() {
