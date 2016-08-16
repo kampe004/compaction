@@ -126,9 +126,19 @@ void DynamicModel::runTimeStep(ModelState& mstate, Metamorphism& mm, Compaction&
 void DynamicModel::doGridChecks(ModelState& mstate){
    /* PERFORMS A NUMBER OF CHECKS ON THE CONSISTENCY AND EFFICIENCY OF THE GRID */
 
-   /* check minimum thickness, start with second layer (index N-2) */
    Grid& grid = mstate.getGrid();
-   int i = grid.size()-2;
+   int i;
+
+   /* check minimum thickness (top layer, index N-1) */
+   i = grid.size()-1;
+   if (grid[i].dz < dzmin_top && mstate.gridsize() > 1){
+      // Layer is too thin, combine with neighbor
+      mstate.combineLayers(grid[i-1], grid[i]);
+      grid.pop_back();
+   }
+
+   /* check minimum thickness, start with second layer (index N-2) */
+   i = grid.size()-2;
    while (i >= 0 ) { // Use while instead of for-loop as size may change during loop
       if (grid[i].dz < dzmin && mstate.gridsize() > 1){
          // Layer is too thin, combine with neighbor
@@ -143,6 +153,7 @@ void DynamicModel::doGridChecks(ModelState& mstate){
       }
       i--;
    }
+
 
    /* check maximum layer thickness */
    Layer& top = grid.back();

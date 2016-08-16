@@ -28,6 +28,7 @@ typedef std::vector<Layer> Grid;
 const double ref_height = 0.1;            // reference height of layer in meters
 const double dzmax = 2*ref_height;        // maximum thickness of layer
 const double dzmin = 0.8*ref_height;      // minimum thickness of layer
+const double dzmin_top = dzmax / 10; 
 const unsigned int initial_layers = 1;
 
 

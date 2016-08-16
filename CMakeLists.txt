@@ -16,4 +16,4 @@ add_subdirectory(src)
 add_executable(dfdm.exe ${SOURCE} ${MAIN})
 
 add_subdirectory(src/unit_test)
-add_executable(unit_test.exe ${SOURCE} ${TEST})
+#add_executable(unit_test.exe ${SOURCE} ${TEST})
