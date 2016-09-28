@@ -94,6 +94,7 @@ void DynamicModel::run(){
             << ", Tmin=" << mstate.minTemp() 
             << ", Tmax=" << mstate.maxTemp() 
             << ", rho_max=" << mstate.maxDens()
+            << ", tdepth=" << mstate.totalDepth()
             << ", sec/year=" << elapsed 
             << ", year/hour=" << 3600./elapsed << std::endl;
       kYear++; 
@@ -229,8 +230,8 @@ void DynamicModel::accumulatePositive(ModelState& mstate) {
    const double U = mstate.getMeteo().surfaceWind();
    const double dfall = std::min(std::max(1.29-0.17*U, 0.20), 1.);
    const double sfall = std::min(std::max(0.08*U + 0.38, 0.5), 0.9);
-   const double new_snow = dz*dens;
-   const double old_snow = top.dz*top.dz;
+   const double new_snow = dz*dens; // mass of new snow [kg/m2]
+   const double old_snow = top.dz*top.dens; // mass of existing snow [kg/m2]
 
 #ifdef DEBUG
    const double dold = top.dnd;
@@ -253,7 +254,6 @@ void DynamicModel::accumulatePositive(ModelState& mstate) {
 
    top.dens = top.dz/(top.dz+dz)*top.dens + dz/(top.dz+dz)*dens;
    top.dz = top.dz + dz;
-
 }
 
 bool DynamicModel::startOfDay(long curr_sec){
