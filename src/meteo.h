@@ -51,7 +51,7 @@ class MeteoIdealized : public Meteo{
  private:
    double _ideal_T_mean;
    double _ideal_T_amp;
-   double _ideal_acc;
+   double _ideal_acc;   // [mm/yr]
    double _ideal_w10m;
 };
 

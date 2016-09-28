@@ -55,6 +55,10 @@ MeteoIdealized::MeteoIdealized(DynamicModel& dm) : Meteo(dm){
    _ideal_acc = config.getDouble(option_name, true, 0, 1000, 0);
    option_name = "forcing:ideal_w10m";
    _ideal_w10m = config.getDouble(option_name, true, 0, 1000, 0);
+
+   _acc_ann_mean  = _ideal_acc; 
+   _Ts_ann_mean   = _ideal_T_mean;
+   _w10m_ann_mean = _ideal_w10m;
 }
 
 double MeteoIdealized::surfaceTemperature() {
