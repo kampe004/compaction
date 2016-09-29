@@ -34,6 +34,7 @@ class History{
    int _hist_freq;
  
    ModelState& _mstate;
+   HistVar _ro1cm; // density at 1 centimetre depth
    HistVar _ro1m; // density at 1 metre depth
    HistVar _ro1mavg; // average interval density (0,1) metre depth
    HistVar _z550; // depth of 550 kg/m3 density

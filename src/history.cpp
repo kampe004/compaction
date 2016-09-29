@@ -8,6 +8,9 @@
 
 namespace DSM{ 
 History::History(ModelState& mstate) : _mstate(mstate) {
+   _ro1cm.sum      = 0.0;
+   _ro1cm.N        = 0;
+   _ro1cm.missing  = false;
    _ro1m.sum      = 0.0;
    _ro1m.N        = 0;
    _ro1m.missing  = false;
@@ -87,33 +90,62 @@ void History::update(bool start_of_day) {
 
    // Density at 1 meter depth (if found)
    static const double d1m = 1.0;
-   double ro1m, ro1m_avg;
-   double dm, dp; // depth+ and depth-
-   // TODO: use nodal depths, not interface depths? 
+   static const double d1cm = 0.01;
+   double ro1m, ro1m_avg, ro1cm;
+   double dm, dp; // nodal depth+ and depth-
+   const int Np = grid.size()-1;
+
+   /* 1 centimeter averages */
    dp = 0.0;
+   for (int i = Np; i >= 0; i--) {
+      dp += 0.5 * grid[i].dz;
+      if (dp > d1cm ) { 
+         if (i == Np) {
+            dm = 0.0;
+            ro1cm = grid[i].dens;
+         } else {
+            // linear interpolation between depth dm and dp
+            dm = dp - 0.5*grid[i].dz - 0.5*grid[i+1].dz; // nodal depth above this layer
+            ro1cm = grid[i].dens * (d1m-dm)/(dp-dm) + grid[i+1].dens * (dp-d1m)/(dp-dm);
+         }
+         break;
+      }
+      dp += 0.5 * grid[i].dz;
+   }
+ 
+   /* 1 meter averages */
    ro1m_avg = 0.0;
-   for (int i = grid.size()-1; i >= 0; i--) {
-      dp += grid[i].dz;
+   dp = 0.0;
+   for (int i = Np; i >= 0; i--) {
+      dp += 0.5 * grid[i].dz;
       if (dp > d1m ) { 
-         if (i == grid.size()-1) {
-            // unlikely: top layer exceeds one meter thickness: 
+         if (i == Np) {
+            // highly unlikely: 1/2 * top layer dz exceeds 1 meter:
+            dm = 0.0;
             ro1m = grid[i].dens;
          } else {
             // linear interpolation between depth dm and dp
-            dm = dp - grid[i].dz;
+            dm = dp - 0.5*grid[i].dz - 0.5*grid[i+1].dz; // nodal depth above this layer
             ro1m = grid[i].dens * (d1m-dm)/(dp-dm) + grid[i+1].dens * (dp-d1m)/(dp-dm);
          }
          ro1m_avg    += (d1m-dm) * grid[i].dens;
-
-         _ro1m.sum   += ro1m;
-         _ro1m.N     += 1;
-
-         _ro1mavg.sum   += ro1m_avg / d1m;
-         _ro1mavg.N     += 1;
          break;
+      } else {
+         ro1m_avg += grid[i].dz * grid[i].dens;
       }
-      ro1m_avg += grid[i].dz * grid[i].dens;
+      dp += 0.5 * grid[i].dz;
    }
+
+   _ro1cm.sum   += ro1cm;
+   _ro1cm.N     += 1;
+
+   _ro1m.sum   += ro1m;
+   _ro1m.N     += 1;
+
+   /* divide by depth to obtain average density (the division is by 1.0, i.e. trivial, 
+      but is included for completeness) */
+   _ro1mavg.sum   += ro1m_avg / d1m;
+   _ro1mavg.N     += 1;
 
    const double z550 = _mstate.getDepthOfDensity(550.);
    if (z550 > 0.) {
@@ -200,6 +232,15 @@ void History::update(bool start_of_day) {
 
 void History::writeHistory() {
    /* writes running means to file*/
+   std::ofstream f_ro1cm;
+   f_ro1cm.open("ro1cm.txt");
+   if (_ro1cm.N > 0) {
+      f_ro1cm << (_ro1cm.sum / _ro1cm.N) << std::endl ;
+   } else {
+      f_ro1cm << -1 << std::endl;
+   }
+   f_ro1cm.close();
+
    std::ofstream f_ro1m;
    f_ro1m.open("ro1m.txt");
    if (_ro1m.N > 0) {
