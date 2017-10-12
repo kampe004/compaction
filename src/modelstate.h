@@ -69,6 +69,7 @@ class ModelState {
    double maxDens();
 
    Grid& getGrid() { return _grid; };
+   Grid& getIceGrid() { return _icegrid; };
    Meteo& getMeteo() { return _meteo; };
    SurfaceDensity& getSurf() { return _surf; };
 
@@ -77,6 +78,7 @@ class ModelState {
    DynamicModel& _dm;
    SurfaceDensity& _surf;
    Grid _grid; 
+   Grid _icegrid; 
    double getZ550();
    double getZ830();
 };

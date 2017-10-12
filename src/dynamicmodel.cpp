@@ -61,7 +61,19 @@ void DynamicModel::run(){
       spinup_dens = config.getDouble(option_name, true, 1., 900., -1.);
    }
   option_name = "stopping_criteria:nyear";
-  const int nyear = config.getInt(option_name, true, 1, (int)1e9, -1);
+  const int nyear = config.getInt(option_name, true, 0, (int)1e9, -1);
+
+   option_name = "general:cap_swe";
+   _cap_swe = config.getDouble(option_name, true, 1., 1e9, -1);
+
+   option_name = "general:refreezing";
+   _refreezing = config.getDouble(option_name, true, 0., 1e9, -1);
+
+   // starting from the surface, external heat is added up until 
+   // a certain SWE depth, determined by the next variable. 
+   // Change this value if you want to simulate deeper "percolation" 
+   option_name = "general:percolation_swe";
+   _percolation_swe = config.getDouble(option_name, true, 1., 1e9, -1);
 
    /* setup submodels */
    std::unique_ptr<Meteo> meteo           = instantiate_meteo(*this);
@@ -121,6 +133,26 @@ void DynamicModel::run(){
    mstate.printSummary();
    mstate.writeModelState();
    history.writeHistory();
+
+   std::cout << "snow temperature" << std::endl;
+   Grid& snowgrid = mstate.getGrid();
+   const int Np1 = snowgrid.size();
+
+   double tot_mass = 0.0;
+   for (int i=Np1-1; i>=0; i--){
+      std::cout << snowgrid[i].T << " ";
+      tot_mass   += snowgrid[i].dens * snowgrid[i].dz;
+   }
+   std::cout << std::endl;
+   std::cout << "snow mass = " << tot_mass / 1000. << " [m SWE]" << std::endl;
+
+   std::cout << "ice temperature" << std::endl;
+   Grid& icegrid = mstate.getIceGrid();
+   const int Np2 = icegrid.size();
+   for (int i=Np2-1; i>=0; i--){
+      std::cout << icegrid[i].T << " ";
+   }
+   std::cout << std::endl;
 }
 
 void DynamicModel::runTimeStep(ModelState& mstate, Metamorphism& mm, Compaction& comp, HeatSolver& heat) {
@@ -128,6 +160,42 @@ void DynamicModel::runTimeStep(ModelState& mstate, Metamorphism& mm, Compaction&
    mm.metamorphism();
    comp.compaction();
    doGridChecks(mstate);
+
+   // LvK add additional heat source from refreezing 
+   // only during Julian days 150-240
+   const long nt = getCurrentTimeInSeconds();
+   const long tsec =  nt % sec_in_year;
+   const long tday = floor((double)tsec / 86400.);
+   if ( tday+1 >= 150 && tday+1 < 240) {
+      //std::cout << "Julian day " << tday << std::endl;
+      Grid& grid = mstate.getGrid(); // snow (firn) grid
+      const int Np = grid.size();
+      double tot_mass = 0.0;
+      int break_idx = Np-1;
+
+      for (int i=Np-1; i>=0; i--){
+         tot_mass   += grid[i].dens * grid[i].dz;
+         break_idx = i;
+         if (tot_mass > _percolation_swe)  { 
+            break_idx = i+1;
+            tot_mass   -= grid[i].dens * grid[i].dz;
+            break;
+         }
+      }
+      //std::cout << "break idx " << break_idx << ", mass = " << tot_mass << std::endl;
+      /* hfus = 3.3375e5 J/kg
+         given XX mm melt per season
+         melt season lasts 90 days
+         XX * hfus / 90 = YY Joule per day
+      */
+      double dayjoules = _refreezing * hfus / 90; // external energy per day [J]
+      double joules = (double)_dt / 86400. * dayjoules;  // external energy per time step [J]
+      for (int i=Np-1; i>=break_idx; i--){
+         double my_mass = grid[i].dens * grid[i].dz;
+         double dT = joules * (my_mass/tot_mass) / (my_mass * cpice);
+         grid[i].T += dT;
+      }
+   }
    heat.heatdiffusion();
    _nt++;
 }
@@ -176,9 +244,21 @@ void DynamicModel::doGridChecks(ModelState& mstate){
       grid.push_back(layer);
    }
 
-   /* remove bottom layers that have attained ice density */
-   while(!grid.empty() && grid.front().dens > 900.) 
-      grid.erase(grid.begin());
+   // /* remove bottom layers that have attained ice density */
+   // while(!grid.empty() && grid.front().dens > 900.) 
+   //    grid.erase(grid.begin());
+
+   // check if capping limit exceeded: remove layers from bottom if that happens
+   const int Np = grid.size();
+//   while(true){
+      double tot_mass = 0.0;
+      for (int i=Np-1; i>=0; i--)
+         tot_mass   += grid[i].dens * grid[i].dz;
+      if (tot_mass > _cap_swe)
+         grid.erase(grid.begin());
+ //     else
+ //        break;
+ //  }
 
    if (grid.empty()) {
       logger << "ERROR: all layers turned to ice and were removed! This probably means that something is wrong with the compaction routine or the accumulation flux" << std::endl;

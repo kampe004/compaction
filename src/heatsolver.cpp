@@ -106,9 +106,19 @@ void HeatSolverImplicit::heatdiffusion() {
       Here a system of equations is built that is solved with LAPACK. 
       The system is tri-diagonal. 
    */
-   Grid& grid = _mstate.getGrid();
-   const int Np = grid.size();
-   if (Np < 2) return;
+   Grid& grid1 = _mstate.getGrid();
+   const int Np1 = grid1.size();
+   if (Np1 < 2) return;
+
+   Grid& grid2 = _mstate.getIceGrid();
+   const int Np2 = grid2.size();
+
+   const int Np = Np1 + Np2; // total grid size
+   Grid grid;  // local grid: contains both the snow and ice grid
+   grid.reserve( Np); // preallocate memory
+   grid.insert( grid.end(), grid2.begin(), grid2.end() );
+   grid.insert( grid.end(), grid1.begin(), grid1.end() );
+
    const double dt = (double)_dm.getDt(); // time in seconds
    const double Tskin = (double)_mstate.getMeteo().surfaceTemperature();
    static const double alpha = 0.5; // Crank-Nicholson factor
@@ -189,14 +199,25 @@ void HeatSolverImplicit::heatdiffusion() {
    if (info != 0) {
       logger << "WARNING: Lapack routine DGTSV returned with info = " << info << std::endl;
    }
-   for (int i = 0; i<Np; i++) {
-      grid[i].T = rhs[i];
-      if (grid[i].T > 280.) {
-         logger << "ERROR: unrealistic temperature i = " << i << ", T[i] = " << grid[i].T << ", dz[i] = " << grid[i].dz << std::endl;
+   for (int i = 0; i<Np2; i++) {
+      grid2[i].T = rhs[i];
+      if (grid2[i].T > 300.) {
+         logger << "ERROR: (ice) unrealistic temperature i = " << i << ", T[i] = " << grid2[i].T << ", dz[i] = " << grid2[i].dz << std::endl;
          logger << "ERROR: Probably this is caused by a high temperature gradient through a thin layer (too small dx /  too big dt)" << std::endl;
          std::abort();
       }
    }
+   for (int i = Np2; i<Np; i++) {
+      int ii = i - Np2; // grid index
+      grid1[ii].T = rhs[i];
+      if (grid1[ii].T > 300.) {
+         logger << "ERROR: unrealistic temperature i = " << i << ", T[i] = " << grid1[ii].T << ", dz[i] = " << grid1[ii].dz << std::endl;
+         logger << "ERROR: Probably this is caused by a high temperature gradient through a thin layer (too small dx /  too big dt)" << std::endl;
+         std::abort();
+      }
+   }
+
+
 }
 
 } // namespace

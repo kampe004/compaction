@@ -29,6 +29,7 @@ class History{
 
  private:
    void initNetcdfOutput();
+   void addNetcdfRecord();
 
    bool _have_netcdf_output;
    int _hist_freq;
@@ -39,6 +40,7 @@ class History{
    HistVar _ro1mavg; // average interval density (0,1) metre depth
    HistVar _z550; // depth of 550 kg/m3 density
    HistVar _z830; // depth of 830 kg/m3 density
+   HistVar _Tice; // deep ice temperature
 
 //   netCDF::NcFile daily_output_nc;
    std::unique_ptr<netCDF::NcFile> datafile_ref;

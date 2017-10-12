@@ -23,6 +23,9 @@ History::History(ModelState& mstate) : _mstate(mstate) {
    _z830.sum      = 0.0;
    _z830.N        = 0;
    _z830.missing  = false;
+   _Tice.sum      = 0.0;
+   _Tice.N        = 0;
+   _Tice.missing  = false;
    _nrec          = 0;
 
    const char * option_name;
@@ -163,14 +166,40 @@ void History::update(bool start_of_day) {
       _z830.missing = true;
    }
 
+   const double Tice = _mstate.getIceGrid()[0].T;
+   if (Tice > 0.) {
+      _Tice.sum += Tice; 
+      _Tice.N += 1;
+   } else {
+      _Tice.missing = true;
+   }
+
    if (_have_netcdf_output && start_of_day) {
       if (_hist_freq != 1) {
          logger << "ERROR: programmer error, hist_freq != 1 not supported" << std::endl;
          std::abort();
       }
+      addNetcdfRecord();
+   } // _have_netcdf_output
+}
+
+void History::addNetcdfRecord(){
+   double dm, dp; // nodal depth+ and depth-
+
+   Grid& grid1 = _mstate.getGrid();
+   const int Np1 = grid1.size();
+
+   Grid& grid2 = _mstate.getIceGrid();
+   const int Np2 = grid2.size();
+
+   const int Np = Np1 + Np2; // total grid size
+   Grid grid;  // local grid: contains both the snow and ice grid
+   grid.reserve( Np); // preallocate memory
+   grid.insert( grid.end(), grid2.begin(), grid2.end() );
+   grid.insert( grid.end(), grid1.begin(), grid1.end() );
 
       // compute nodal depths
-      const int Np = grid.size();
+      //const int Np = grid.size();
       double zn[Np-1];
       zn[Np-1] = grid[Np-1].dz * 0.5;
       for (int i = Np-2; i >= 0; i--) {
@@ -227,7 +256,6 @@ void History::update(bool start_of_day) {
    
       // increase record counter
       _nrec++; 
-   } // _have_netcdf_output
 }
 
 void History::writeHistory() {
@@ -276,6 +304,15 @@ void History::writeHistory() {
       f_z830 << (_z830.sum / _z830.N) << std::endl;
    }
    f_z830.close();
+
+   std::ofstream f_Tice;
+   f_Tice.open("deepice.txt");
+   if (_Tice.missing) {
+      f_Tice << -1.0 << std::endl;
+   } else {
+      f_Tice << (_Tice.sum / _Tice.N) << std::endl;
+   }
+   f_Tice.close();
 }
 
 

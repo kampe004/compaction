@@ -13,6 +13,8 @@ static const double T0 = 273.15; // water freezing point [K]
 static const double tcair = 0.023; // air thermal conductivity [W/m/K]
 static const double tcice = 2.290; // ice thermal conductivity [W/m/K]
 static const double cpice = 2.11727e3; // specific heat of fresh ice ~ J/kg/K
+static const double hfus = 3.3375e5; // heat of fusion of water [J/kg]
+
 
 static const long sec_in_year=365*24*3600; // amount of seconds in a year
 static const long sec_in_day=24*3600; // amount of seconds in a day

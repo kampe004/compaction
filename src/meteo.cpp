@@ -52,7 +52,7 @@ MeteoIdealized::MeteoIdealized(DynamicModel& dm) : Meteo(dm){
    option_name = "forcing:ideal_T_amp";
    _ideal_T_amp = config.getDouble(option_name, true, 0, 1000, 0);
    option_name = "forcing:ideal_acc";
-   _ideal_acc = config.getDouble(option_name, true, 0, 1000, 0);
+   _ideal_acc = config.getDouble(option_name, true, 0, 8000, 0);
    option_name = "forcing:ideal_w10m";
    _ideal_w10m = config.getDouble(option_name, true, 0, 1000, 0);
 
@@ -64,7 +64,7 @@ MeteoIdealized::MeteoIdealized(DynamicModel& dm) : Meteo(dm){
 double MeteoIdealized::surfaceTemperature() {
    const long nt = _dm.getCurrentTimeInSeconds();
    const long t =  nt % sec_in_year;
-   return _ideal_T_amp*cos(2*M_PI*(double)t/(double)sec_in_year) + _ideal_T_mean;
+   return _ideal_T_amp* -cos(2*M_PI*(double)t/(double)sec_in_year) + _ideal_T_mean;
 }
 
 /* class MeteoNetcdf */
@@ -275,7 +275,7 @@ void MeteoNetcdfRacmoGridded::readForcing(){
    nclon.getVar(&rlons.front());
 
    double mindist, dist;
-   int idx1, idx2;
+   size_t idx1, idx2;
    mindist = 1e5; 
    for (int ilat = 0; ilat < nrlat; ++ilat) {
       for (int ilon = 0; ilon < nrlon; ++ilon) {

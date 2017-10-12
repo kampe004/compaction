@@ -24,6 +24,18 @@ ModelState::ModelState(Meteo& meteo, SurfaceDensity& surf, DynamicModel& dm) : _
    layer.sph    = fs_sph;
    layer.gs     = fs_gs;
    _grid.push_back(layer);
+
+   // ice grid, 100 x 10 cm layers = 10 m
+   layer.T      = 250.;
+   layer.dens   = rho_i;
+   layer.dz     = 0.1;
+   double tot_dz = 0.0;
+   for (int i = 0; i< 12; i++){
+      _icegrid.push_back(Layer(layer)); // use copy constructor to create unique layers
+      tot_dz += layer.dz;
+      layer.dz *= 1.5;
+   }
+   std::cout << "created " << _icegrid.size() << " ice layers, combined depth = " << tot_dz << " m" << std::endl;
 }
 
 double ModelState::getDepthOfDensity(const double dens) {

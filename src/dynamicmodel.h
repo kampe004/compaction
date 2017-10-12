@@ -14,7 +14,7 @@ class DynamicModel{
    ~DynamicModel() {};
 
    // getters and setters
-   long getCurrentTimeInSeconds() { return {_nt * _dt}; };
+   long getCurrentTimeInSeconds() { return _nt * _dt; };
    long getCurrentTimeStep() { return _nt; };
    long getDt() { return _dt; };
 
@@ -24,6 +24,10 @@ class DynamicModel{
  private:
    long _nt;   // number of timesteps since start of simulation
    long _dt;   // simulation timestep [s]
+
+   double _cap_swe; // capping depth [mm]
+   double _refreezing; // (virtual) refreezing amount [mm]
+   double _percolation_swe; // depth of virtual percolation [mm swe]
 
    void runTimeStep(ModelState& mstate, Metamorphism& mm, Compaction& comp, HeatSolver& hs);
    void doGridChecks(ModelState& mstate);
